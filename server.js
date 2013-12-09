@@ -99,5 +99,6 @@ app.get('/checklogin-ajax', function(req, res) {
     
 });
 
-app.listen(81);
-console.log('Listening on port 80');
+var serverPort = process.argv[2] ? process.argv[2] : 80;
+app.listen(serverPort);
+console.log('Listening on port ' + serverPort);

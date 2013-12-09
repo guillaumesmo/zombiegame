@@ -23,8 +23,6 @@ var sqlConnection = mysql.createConnection({
     database : 'zombiegame_db'
 })
 
-console.log('hello');
-
 var databaseError = function(where, err){
     res.json({result: false, error: 'A database error has occured'});
     console.log("database error in " + where);

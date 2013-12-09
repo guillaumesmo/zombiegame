@@ -1,0 +1,38 @@
+/*
+To change this license header, choose License Headers in Project Properties.
+To change this template file, choose Tools | Templates
+and open the template in the editor.
+*/
+/* 
+    Created on : 09-déc.-2013, 12:44:11
+    Author     : Guillaume
+*/
+
+
+html.home {
+    background: url(../img/homescreen.png) no-repeat center center fixed;
+    -webkit-background-size: cover;
+    -moz-background-size: cover;
+    -o-background-size: cover;
+    background-size: cover;
+    background-color: black;
+    color: white;
+}
+
+form {
+    margin-top: 100px;
+}
+form > div {
+    overflow: auto;
+}
+form > div > label {
+    float: left;
+    width: 100px;
+}
+form > div > input:not([type="submit"]) {
+    float: left;
+    width: 200px;
+}
+form > div > input[type="submit"] {
+    width: 100%;
+}

@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html class="home">
+    <head>
+        <title>Zombie Game</title>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=320">
+        <script type="text/javascript" src="http://code.jquery.com/jquery-2.0.3.min.js"></script>
+        <script type="text/javascript" src="js/jquery.form.min.js"></script>
+        <script type="text/javascript">
+        $(function() { 
+            $('form').ajaxForm({
+                'success': function( data, textStatus, jqXHR ){
+                    if(data.result){
+                        location.href="index.html";
+                    } else {
+                        alert(data.error);
+                    }
+                }
+            }); 
+        }); 
+        </script>
+        <link rel="stylesheet" type="text/css" href="css/style.css" />
+    </head>
+    <body>
+        <form action="register-ajax" method="post">
+            <div>
+                <label>Username</label>
+                <input type="text" name="username" required="required" placeholder="Username" pattern="[a-zA-Z0-9-_]{5,16}">
+            </div>
+            <div>
+                <label>Email</label>
+                <input type="email" name="email" required="required" placeholder="Email">
+            </div>
+            
+            <div>
+                <label>Password</label>
+                <input type="password" name="password" required="required" placeholder="">
+            </div>
+            <div>
+                <label>Repeat</label>
+                <input type="password" name="password2" required="required" placeholder="">
+            </div>
+            <div>
+                <input type="submit" value="Register me">
+            </div>
+        </form>
+    </body>
+</html>

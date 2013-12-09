@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html class="home">
+    <head>
+        <title>Zombie Game</title>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=320">
+        <script type="text/javascript" src="http://code.jquery.com/jquery-2.0.3.min.js"></script>
+        <script type="text/javascript" src="js/jquery.form.min.js"></script>
+        <script type="text/javascript">
+        
+        function onLogIn(){
+            location.href="map.html";
+        }
+        
+        $(function() {
+            
+            $.getJSON('checklogin-ajax', function( data ) {
+                if(data.result){
+                    if(data.logged){
+                        onLogIn();
+                    }
+                } else {
+                    alert(data.error);
+                }
+            });
+            
+            $('form').ajaxForm({
+                'success': function( data, textStatus, jqXHR ){
+                    if(data.result){
+                        onLogIn();
+                    } else {
+                        alert(data.error);
+                    }
+                }
+            }); 
+            
+                //$.ajaxSetup({ cache: true });
+                $.getScript('//connect.facebook.net/en_UK/all.js', function(){
+
+                        FB.init({
+                                appId: '472417232873084',
+                        });
+
+                        var $fbButton = $('#fb-login-button');
+
+                        $fbButton.click(function(e){
+                                e.preventDefault();
+
+                                FB.login(function(response) {
+                                        if (response.authResponse) {
+                                                gameClient.loadScreen('home');
+                                        } else {
+                                                alert('Come on, you can\'t slay zombies if you can\'t even log in ...');
+                                        }
+                                }, {scope: 'email'});
+                                /*window.location = "http://www.facebook.com/dialog/oauth/"
+                                        + "?" + "scope=" + "email"
+                                        + "&" + "client_id=" + '472417232873084'
+                                        + "&" + "redirect_uri=" + 'http://game.wavy.be/'
+                                        + "&" + "response_type=token";*/
+                        });
+
+                        /*if(window.location.hash && window.location.hash.length>0){
+                                var parts = {};
+                                $.each(window.location.hash.substring(1).split('&'), function(i, elem){
+                                        var temp = elem.split('=');
+                                        if(temp.length==2) parts[temp[0]]=temp[1];
+                                });
+                                console.log(parts);
+                                gameClient.loadScreen('home');
+                        }*/
+
+                });
+        });
+
+        </script>
+        <link rel="stylesheet" type="text/css" href="css/style.css" />
+    </head>
+    <body>
+        <div id="fb-root"></div>
+        <form action="login-ajax" method="post">
+            <div>
+                <label>Username</label>
+                <input type="text" name="username" required="required" placeholder="Username" pattern="[a-zA-Z0-9-_]{5,16}">
+            </div>
+            <div>
+                <label>Password</label>
+                <input type="password" name="password" required="required" placeholder="">
+            </div>
+            <div>
+                <input type="submit" value="Log in">
+            </div>
+        </form>
+        <div style="margin-top: 20px;text-align: center;"><a href="register.html" style="color: white;">Create an account</a></div>
+        <div style="margin-top: 50px;padding-top: 50px;text-align: center;border-top: 1px solid white;">
+                <a href="#" id="fb-login-button"><img src="img/loginwithfacebook.png" style="width: 300px;" /></a>
+        </div>
+    </body>
+</html>

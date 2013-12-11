@@ -23,8 +23,8 @@ var sqlConnection = mysql.createConnection({
     database : 'zombiegame_db'
 })
 
-var databaseError = function(where, err){
-    res.json({result: false, error: 'A database error has occured'});
+var databaseError = function(where, err, res){
+    if(res) res.json({result: false, error: 'A database error has occured'});
     console.log("database error in " + where);
     console.log(err);
 }
@@ -33,14 +33,14 @@ app.post('/register-ajax', function(req, res) {
     
     sqlConnection.query('SELECT `id` FROM `users` WHERE `username`=? LIMIT 0,1', req.body.username, function(err, rows) {
         if(err){
-            databaseError("/register-ajax (1)", err);
+            databaseError("/register-ajax (1)", err, res);
             return;
         }
         if(rows.length===0){
             if(req.body.password===req.body.password2){
                 sqlConnection.query('INSERT INTO `users` SET username=?, email=?, password=md5(?)', [req.body.username, req.body.email, req.body.password], function(err, result) {
                     if(err){
-                        databaseError("/register-ajax (2)", err);
+                        databaseError("/register-ajax (2)", err, res);
                         return;
                     }
                     res.json({result: true});
@@ -60,7 +60,7 @@ app.post('/login-ajax', function(req, res) {
     sqlConnection.query('SELECT * FROM `users` WHERE `username`=? AND password=md5(?) LIMIT 0,1', [req.body.username, req.body.password], function(err, rows) {
     
         if(err){
-            databaseError("/login-ajax (1)", err);
+            databaseError("/login-ajax (1)", err, res);
             return;
         }
     
@@ -83,7 +83,7 @@ app.get('/checklogin-ajax', function(req, res) {
     
     sqlConnection.query('SELECT * FROM `users` WHERE `id`=? LIMIT 0,1', [req.session.userid], function(err, rows) {
         if(err){
-            databaseError("/checklogin-ajax (1)", err);
+            databaseError("/checklogin-ajax (1)", err, res);
             return;
         }
         if(rows.length===1){

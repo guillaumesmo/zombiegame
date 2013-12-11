@@ -57,18 +57,13 @@ app.post('/register-ajax', function(req, res) {
 
 app.post('/login-ajax', function(req, res) {
     
-    console.log('test1');
-    
     sqlConnection.query('SELECT * FROM `users` WHERE `username`=? AND password=md5(?) LIMIT 0,1', [req.body.username, req.body.password], function(err, rows) {
     
-    console.log('test2');
         if(err){
             databaseError("/login-ajax (1)", err);
             return;
         }
     
-    console.log('test3')
-    console.log(rows);;
         if(rows.length===1){
             req.session.userid = rows[0].id;
             res.json({result: true, userid: req.session.userid});
@@ -81,8 +76,10 @@ app.post('/login-ajax', function(req, res) {
 
 app.get('/checklogin-ajax', function(req, res) {
     
-    if(!req.session.userid)
+    if(!req.session.userid){
         res.json({result: true, logged: false});
+        return;
+    }
     
     sqlConnection.query('SELECT * FROM `users` WHERE `id`=? LIMIT 0,1', [req.session.userid], function(err, rows) {
         if(err){
@@ -92,7 +89,7 @@ app.get('/checklogin-ajax', function(req, res) {
         if(rows.length===1){
             res.json({result: true, logged: true});
         } else {
-            //delete req.session.userid;
+            delete req.session.userid;
             res.json({result: true, logged: false});
         }
     });

@@ -4,29 +4,54 @@
         <title>Zombie Game</title>
         <meta charset="UTF-8">
         <meta name="viewport" content="initial-scale=1.0, user-scalable=no" />
-		<style type="text/css">
-		  html { height: 100% }
-		  body { height: 100%; margin: 0; padding: 0 }
-		  #map-canvas { position: absolute; top: 100px; left: 0; right: 0; bottom: 0; }
-		</style>
+        <style type="text/css">
+        html { height: 100% }
+        body { height: 100%; margin: 0; padding: 0 }
+        #map-canvas { position: absolute; top: 50px; left: 0; right: 0; bottom: 0; }
+        </style>
         <script type="text/javascript" src="http://code.jquery.com/jquery-2.0.3.min.js"></script>
-		<script type="text/javascript"
-		  src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCkehAoWctYivBAaHfObezGyywij4dC-n0&sensor=true">
-		</script>
-		<script type="text/javascript">
-		  function initialize() {
-			var mapOptions = {
-			  center: new google.maps.LatLng(-34.397, 150.644),
-			  zoom: 8
-			};
-			var map = new google.maps.Map(document.getElementById("map-canvas"),
-				mapOptions);
-		  }
-		  google.maps.event.addDomListener(window, 'load', initialize);
-		</script>
+        <script src="/socket.io/socket.io.js"></script>
+        <script src="js/game.js"></script>
+        <script type="text/javascript"
+          src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCkehAoWctYivBAaHfObezGyywij4dC-n0&sensor=true">
+        </script>
+        <script type="text/javascript">
+        $(function() {
+            
+            var map = new google.maps.Map(document.getElementById("map-canvas"), {
+                center: new google.maps.LatLng(50.82275, 4.395),
+                zoom: 16
+            });
+            
+            var markers = {};
+            
+            zombieEngine.socket.emit('getallmarkers');
+            
+            zombieEngine.socket.on('addmarker', function(data){
+                if(markers[data.id])
+                    delete markers[data.id];
+                markers[data.id] = new google.maps.Marker({
+                    position: new google.maps.LatLng(data.lat, data.long),
+                    title: data.name,
+                    icon: data.type=='user' ? 'img/human01_transparant.png' : 'img/zomby01_transparant.png'
+                });
+                // To add the marker to the map, call setMap();
+                markers[data.id].setMap(map);
+            });
+            
+            zombieEngine.socket.on('movemarker', function(data){
+                if(!markers[data.id]){
+                    console.log('Marker ' + data.id + ' doesn\'t exist');
+                    return;
+                }
+                markers[data.id].setPosition(new google.maps.LatLng(data.lat, data.long));
+            });
+
+        });
+        </script>
     </head>
     <body>
-		<div>hello</div>
-        <div id="map-canvas"/>
+	<div>hello</div>
+        <div id="map-canvas" />
     </body>
 </html>

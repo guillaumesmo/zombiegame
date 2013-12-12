@@ -1,15 +1,16 @@
 var config = require('./config');
+var _ = require("underscore");
 var mysql = require('mysql');
-var express = require('express');
-var app = express();
+express = require('express.io')
+var app = express().http().io()
 
 // Required by session() middleware
 // pass the secret for signed cookies
 // (required by session())
-app.use(express.cookieParser('secretsecret1234'));
+app.use(express.cookieParser());
 
 // required for sessions
-app.use(express.session());
+app.use(express.session({secret: 'notsosecret'}));
 
 // required for POST queries
 app.use(express.bodyParser());
@@ -18,6 +19,8 @@ app.use(express.bodyParser());
 app.use(express.static(__dirname + '/public'));
 
 var sqlConnection;
+
+var onlineusers = {};
 
 function reconnectMySql(){
     
@@ -92,7 +95,7 @@ app.post('/register-ajax', function(req, res) {
 
 app.post('/login-ajax', function(req, res) {
     
-    sqlConnection.query('SELECT * FROM `users` WHERE `username`=? AND password=md5(?) LIMIT 0,1', [req.body.username, req.body.password], function(err, rows) {
+    sqlConnection.query('SELECT id, username FROM `users` WHERE `username`=? AND password=md5(?) LIMIT 0,1', [req.body.username, req.body.password], function(err, rows) {
     
         if(err){
             databaseError("/login-ajax (1)", err, res);
@@ -100,8 +103,8 @@ app.post('/login-ajax', function(req, res) {
         }
     
         if(rows.length===1){
-            req.session.userid = rows[0].id;
-            res.json({result: true, userid: req.session.userid});
+            req.session.user = {id: rows[0].id, username: rows[0].username};
+            res.json({result: true, userid: req.session.user.id});
         } else {
             res.json({result: false, error: 'Bad credentials'});
         }
@@ -111,12 +114,12 @@ app.post('/login-ajax', function(req, res) {
 
 app.get('/checklogin-ajax', function(req, res) {
     
-    if(!req.session.userid){
+    if(!req.session.user){
         res.json({result: true, logged: false});
         return;
     }
     
-    sqlConnection.query('SELECT * FROM `users` WHERE `id`=? LIMIT 0,1', [req.session.userid], function(err, rows) {
+    sqlConnection.query('SELECT * FROM `users` WHERE `id`=? LIMIT 0,1', [req.session.user.id], function(err, rows) {
         if(err){
             databaseError("/checklogin-ajax (1)", err, res);
             return;
@@ -124,11 +127,75 @@ app.get('/checklogin-ajax', function(req, res) {
         if(rows.length===1){
             res.json({result: true, logged: true});
         } else {
-            delete req.session.userid;
+            delete req.session.user;
             res.json({result: true, logged: false});
         }
     });
     
+});
+
+app.io.route('position', function(req) {
+    if(!req.session.user){
+        console.log("Got position from unauthentified user");
+        return;
+    }
+    console.log('Position data for user  ' + req.session.user.id + ':', req.data);
+    
+    // create a memory user instance of not existing
+    if(!onlineusers[req.session.user.id]){
+        onlineusers[req.session.user.id] = {
+            id: req.session.user.id,
+            username: req.session.user.username,
+            lastposition: new Date(),
+            lastpositionsave: 0,
+            position: req.data.coords
+        };
+        app.io.broadcast('addmarker', {
+            id: 'user' + req.session.user.id,
+            lat: req.data.coords.latitude,
+            long: req.data.coords.longitude,
+            name: req.session.user.username,
+            type: 'user'
+        });
+    }
+    
+    app.io.broadcast('movemarker', {
+        id: 'user' + req.session.user.id,
+        lat: req.data.coords.latitude,
+        long: req.data.coords.longitude
+    });
+    
+    // update the user position in database if it hasn't been done in the last 3 seconds
+    if(onlineusers[req.session.user.id].lastpositionsave<(new Date()-3000)){
+        sqlConnection.query('UPDATE `users` SET lastposition=POINT(?, ?) WHERE id=?', [onlineusers[req.session.user.id].position.latitude, onlineusers[req.session.user.id].position.longitude, onlineusers[req.session.user.id].id], function(err, result) {
+            if(err){
+                databaseError("position", err);
+                return;
+            }
+        });
+        // we cant put this inside the mysql callback because a lot of updates would be executed in the meanwhile
+        if(onlineusers[req.session.user.id]) onlineusers[req.session.user.id].lastpositionsave=new Date();
+    }
+    
+    req.session.save();
+});
+
+app.io.route('getallmarkers', function(req) {
+    if(!req.session.user){
+        return;
+    }
+    
+    _.each(onlineusers, function(user){
+        req.io.emit('addmarker', {
+            id: 'user' + user.id,
+            lat: user.position.latitude,
+            long: user.position.longitude,
+            name: user.username,
+            type: 'user'
+        });
+    });
+    
+    req.session.save();
 });
 
 var serverPort = process.argv[2] ? process.argv[2] : config.defaultPort;

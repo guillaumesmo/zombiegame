@@ -32,6 +32,7 @@ form > div > label {
 form > div > input:not([type="submit"]) {
     float: left;
     width: 200px;
+    box-sizing: border-box;
 }
 form > div > input[type="submit"] {
     width: 100%;

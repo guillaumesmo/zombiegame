@@ -124,7 +124,7 @@ function reconnectMySql(){
 
     sqlConnection.connect(function(err) {
         if(err) {
-            console.log('error when connecting to db:', err);
+            console.log(new Date(), 'error when connecting to db:', err);
             // We introduce a delay before attempting to reconnect,
             // to avoid a hot loop, and to allow our node script to
             // process asynchronous requests in the meantime.
@@ -146,7 +146,7 @@ reconnectMySql();
 
 var databaseError = function(where, err, res){
     
-    console.log("database error in " + where);
+    console.log(new Date(), "database error in " + where);
     console.log(err);
     
     // If a client waits for an answer, reply with an error message
@@ -181,6 +181,7 @@ app.post('/register-ajax', function(req, res) {
                 databaseError("/register-ajax (2)", err, res);
                 return;
             }
+            console.log(new Date(), "User " + req.body.username + " registered successfully");
             res.json({result: true});
         });
         
@@ -198,6 +199,7 @@ app.post('/login-ajax', function(req, res) {
         }
     
         if(rows.length===1){
+            console.log(new Date(), "User " + rows[0].username + " logged in successfully");
             req.session.user = {id: rows[0].id, username: rows[0].username};
             res.json({result: true, userid: req.session.user.id});
         } else {
@@ -210,6 +212,7 @@ app.post('/login-ajax', function(req, res) {
 app.get('/logout', function(req, res) {
     
     if(req.session.user){
+        console.log(new Date(), "User " + req.session.user.username + " logged out");
         // remove the user session
         delete req.session.user;
     }
@@ -243,14 +246,14 @@ app.get('/checklogin-ajax', function(req, res) {
 
 app.io.route('position', function(req) {
     if(!req.session.user){
-        console.log("Got position from unauthentified user");
+        //console.log(new Date(), "Got position from unauthentified user");
         return;
     }
     if(!req.data.coords || !req.data.coords.latitude || !req.data.coords.longitude){
-        //console.log("Invalid data");
+        //console.log(new Date(), "Invalid data");
         return;
     }
-    console.log('Position data for user  ' + req.session.user.id + ':', req.data);
+    //console.log('Position data for user  ' + req.session.user.id + ':', req.data);
     
     // create a memory user instance of not existing
     if(!onlineusers[req.session.user.id]){
@@ -319,4 +322,4 @@ setInterval(function(){
 
 var serverPort = process.argv[2] ? process.argv[2] : config.defaultPort;
 app.listen(serverPort);
-console.log('Listening on port ' + serverPort);
+console.log(new Date(), 'Listening on port ' + serverPort);

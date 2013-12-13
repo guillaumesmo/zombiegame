@@ -234,6 +234,10 @@ app.io.route('position', function(req) {
         console.log("Got position from unauthentified user");
         return;
     }
+    if(!req.data.coords || !req.data.coords.latitude || !req.data.coords.longitude){
+        //console.log("Invalid data");
+        return;
+    }
     console.log('Position data for user  ' + req.session.user.id + ':', req.data);
     
     // create a memory user instance of not existing

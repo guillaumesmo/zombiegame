@@ -16,35 +16,113 @@
           src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCkehAoWctYivBAaHfObezGyywij4dC-n0&sensor=true">
         </script>
         <script type="text/javascript">
+        
+        var map;
+        
+        var pathBuilder = {
+            tempPath: null,
+            listener: null,
+            drawing: null,
+            start: function(){
+                this.tempPath = [];
+                this.listener = google.maps.event.addListener(map, 'click', (function(map, pathBuilder){return function(event) {
+                    
+                    pathBuilder.tempPath.push(event.latLng);
+                    
+                    if(pathBuilder.drawing){
+                        pathBuilder.drawing.setMap(null);
+                        delete pathBuilder.drawing;
+                    }
+                    
+                    pathBuilder.drawing = new google.maps.Polyline({
+                        path: pathBuilder.tempPath,
+                        geodesic: true,
+                        strokeColor: '#FF0000',
+                        strokeOpacity: 1.0,
+                        strokeWeight: 2
+                    });
+
+                    pathBuilder.drawing.setMap(map);
+                    
+                };})(map, this));
+            },
+            stop: function(){
+                google.maps.event.removeListener(this.listener);
+                delete this.listener;
+                if(this.drawing){
+                    this.drawing.setMap(null);
+                    delete this.drawing;
+                }
+                return JSON.stringify(this.tempPath, function(key, value){
+                    if(value instanceof google.maps.LatLng)
+                        return [value.lat(), value.lng()];
+                    return value;
+                });
+            }
+        };
+            
         $(function() {
             
-            var map = new google.maps.Map(document.getElementById("map-canvas"), {
+            map = new google.maps.Map(document.getElementById("map-canvas"), {
                 center: new google.maps.LatLng(50.82275, 4.395),
                 zoom: 16
             });
             
-            var markers = {};
+            var map_objects = {};
             
             zombieEngine.socket.emit('getallmarkers');
             
             zombieEngine.socket.on('addmarker', function(data){
-                if(markers[data.id])
-                    delete markers[data.id];
-                markers[data.id] = new google.maps.Marker({
-                    position: new google.maps.LatLng(data.lat, data.long),
-                    title: data.name,
-                    icon: data.type=='user' ? 'img/human01_transparant.png' : 'img/zomby01_transparant.png'
-                });
+                if(map_objects[data.id]){
+                    map_objects[data.id].marker.setMap(null);
+                    delete map_objects[data.id].marker;
+                    delete map_objects[data.id];
+                }
+                map_objects[data.id] = {
+                    marker: new google.maps.Marker({
+                        position: new google.maps.LatLng(data.pos[0], data.pos[1]),
+                        title: data.name,
+                        icon: data.type=='user' ? 'img/human01_transparant.png' : 'img/zomby01_transparant.png'
+                    }),
+                    animation: null
+                };
+                (function(){
+                    var map_object = map_objects[data.id];
+                    var interval = setInterval(function(){
+                        if((!map_object && !clearInterval(interval)) || !map_object.animation) return;
+                        var elapsed = (new Date()-map_object.animation.start)/1000;
+                        if(elapsed<1){
+                            map_object.marker.setPosition(new google.maps.LatLng(
+                                map_object.animation.origin.lat()+elapsed*(map_object.animation.destination.lat()-map_object.animation.origin.lat()), 
+                                map_object.animation.origin.lng()+elapsed*(map_object.animation.destination.lng()-map_object.animation.origin.lng())
+                            ));
+                        } else {
+                            map_object.marker.setPosition(map_object.animation.destination);
+                            delete map_objects[data.id].animation;
+                        }
+                    },25);
+                })();
                 // To add the marker to the map, call setMap();
-                markers[data.id].setMap(map);
+                map_objects[data.id].marker.setMap(map);
             });
             
             zombieEngine.socket.on('movemarker', function(data){
-                if(!markers[data.id]){
+                if(!map_objects[data.id]){
                     console.log('Marker ' + data.id + ' doesn\'t exist');
                     return;
                 }
-                markers[data.id].setPosition(new google.maps.LatLng(data.lat, data.long));
+                if(map_objects[data.id].animation){
+                    map_objects[data.id].animation.origin = map_objects[data.id].marker.getPosition();
+                    map_objects[data.id].animation.destination = new google.maps.LatLng(data.pos[0], data.pos[1]);
+                    map_objects[data.id].animation.start = new Date();
+                } else {
+                    map_objects[data.id].animation = {
+                        origin: map_objects[data.id].marker.getPosition(),
+                        destination: new google.maps.LatLng(data.pos[0], data.pos[1]),
+                        start: new Date()
+                    };
+                }
+                //map_objects[data.id].marker.setPosition(new google.maps.LatLng(data.pos[0], data.pos[1]));
             });
 
         });

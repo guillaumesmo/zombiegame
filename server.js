@@ -207,6 +207,18 @@ app.post('/login-ajax', function(req, res) {
     
 });
 
+app.get('/logout', function(req, res) {
+    
+    if(req.session.user){
+        // remove the user session
+        delete req.session.user;
+    }
+    
+    // redirect him to the homepage
+    res.redirect('/');
+    
+});
+
 app.get('/checklogin-ajax', function(req, res) {
     
     if(!req.session.user){

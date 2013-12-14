@@ -49,7 +49,7 @@ var NPC = Class(Character, {
         
         // get the total elapsed distance based on time and speed
         // apply modulo on waypoints length for looping
-        var elapsedDistance = ((new Date()-this._startTime)/1000*this._speed)%this._waypointsLength;
+        var elapsedDistance = ((new Date()-this._startTime)/1000*this._speed);
         
         // get current waypoint segment and interpolation factor
         var temp = this.getCurrentWayPoint(elapsedDistance);

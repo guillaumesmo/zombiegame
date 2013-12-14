@@ -52,13 +52,37 @@ var NPC = Class(Character, {
         var elapsedDistance = ((new Date()-this._startTime)/1000*this._speed)%this._waypointsLength;
         
         // get current waypoint segment and interpolation factor
-        var temp = _.reduce(this._waypointsLengths, function(memo, num, index){ if(_.isArray(memo)) return memo;if(elapsedDistance<memo + num) return [index, (elapsedDistance-memo)/num];return memo + num; }, 0)
+        var temp = this.getCurrentWayPoint(elapsedDistance);
         
         // apply interpolation between current waypoint and next waypoint and return position
         return [
             this._waypoints[temp[0]][0]+temp[1]*(this._waypoints[temp[0]+1==this._waypoints.length ? 0 : temp[0]+1][0]-this._waypoints[temp[0]][0]),
             this._waypoints[temp[0]][1]+temp[1]*(this._waypoints[temp[0]+1==this._waypoints.length ? 0 : temp[0]+1][1]-this._waypoints[temp[0]][1])
         ];
+        
+    },
+    /**
+     * Returns an array containing the index of the current waypoint and an 
+     * interpolation factor [0, 1[ between current waypoint and next waypoint
+     */
+    getCurrentWayPoint: function(elapsedDistance){
+        
+        // apply modulo on waypoints length for looping
+        elapsedDistance = elapsedDistance%this._waypointsLength;
+        
+        var totalLength = 0;
+        // loop over waypoint lengths until totalLength > elapsedDistance
+        _.each(this._waypointsLengths, function(waypointLength, index){
+            if(totalLength + waypointLength > elapsedDistance)
+                return [index, (elapsedDistance-totalLength)/waypointLength];
+            totalLength += waypointLength;
+        });
+        
+        // we should never reach this code
+        console.log(new Date(), 'error in getCurrentWayPoint');
+        console.log('elapsedDistance', elapsedDistance);
+        console.log('this._waypointsLengths', this._waypointsLengths);
+        return [0, 0];
         
     },
     setWayPoints: function(waypoints){

@@ -119,12 +119,23 @@ var User = Class(Character, {
         this.lastposition = 0;
         this.lastpositionsave = 0;
         this.position = null;
+        this.previousPosition = null;
+        this.goingToTheRight = null;
     },
     getPosition: function(){
         return this.position;
     },
+    getDirection: function(){
+    	
+    	if( this.previousPosition[0] - this.position[0] < 0)
+    		this.goingToTheRight = true;
+    	else
+    		this.goingToTheRight = false;
+    	
+    }
     setPosition: function(lat, lng){
-        this.lastposition = new Date();
+        this.lastposition = new Date();      
+        this.previousPostion = this.position;
         this.position = [lat, lng];
     
         // update the user position in database if it hasn't been done in the last 3 seconds

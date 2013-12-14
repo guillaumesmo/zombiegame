@@ -68,17 +68,18 @@ var NPC = Class(Character, {
     getCurrentWayPoint: function(elapsedDistance){
         
         // apply modulo on waypoints length for looping
+        // elapsedDistance = [0, this._waypointsLength[
         elapsedDistance = elapsedDistance%this._waypointsLength;
         
         var totalLength = 0;
         // loop over waypoint lengths until totalLength > elapsedDistance
-        _.each(this._waypointsLengths, function(waypointLength, index){
-            if(totalLength + waypointLength > elapsedDistance)
-                return [index, (elapsedDistance-totalLength)/waypointLength];
-            totalLength += waypointLength;
-        });
+        for(var i=0;i<this._waypointsLengths;i++){
+            if(totalLength + this._waypointsLengths[i] > elapsedDistance)
+                return [index, (elapsedDistance-totalLength)/this._waypointsLengths[i]];
+            totalLength += this._waypointsLengths[i];
+        }
         
-        // we should never reach this code
+        // we should never reach this code ( because [0, this._waypointsLength[ )
         console.log(new Date(), 'error in getCurrentWayPoint');
         console.log('elapsedDistance', elapsedDistance);
         console.log('this._waypointsLengths', this._waypointsLengths);

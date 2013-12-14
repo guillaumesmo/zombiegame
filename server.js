@@ -75,7 +75,7 @@ var NPC = Class(Character, {
         // loop over waypoint lengths until totalLength > elapsedDistance
         for(var i=0;i<this._waypointsLengths.length;i++){
             if(totalLength + this._waypointsLengths[i] > elapsedDistance)
-                return [index, (elapsedDistance-totalLength)/this._waypointsLengths[i]];
+                return [i, (elapsedDistance-totalLength)/this._waypointsLengths[i]];
             totalLength += this._waypointsLengths[i];
         }
         

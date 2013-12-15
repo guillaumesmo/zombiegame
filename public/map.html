@@ -85,50 +85,90 @@
         $(function() {
             
             function interpolateMarker(map_object){
-                if(!map_object.animation) return;
-                var elapsed = (new Date()-map_object.animation.start)/1000;
+                if(!map_object.interpolation) return;
+                var elapsed = (new Date()-map_object.interpolation.start)/(map_object.interpolation.end-map_object.interpolation.start);
                 if(elapsed<1){
+                    /*if(map_object.id=='npc1') console.log(map_object.interpolation.origin.lat(), map_object.interpolation.destination.lat(), elapsed, google.maps.geometry.spherical.interpolate(map_object.interpolation.origin, map_object.interpolation.destination, elapsed).lat());
+                    map_object.marker.setPosition(
+                        google.maps.geometry.spherical.interpolate(map_object.interpolation.origin, map_object.interpolation.destination, elapsed)
+                    );*/
                     map_object.marker.setPosition(new google.maps.LatLng(
-                        map_object.animation.origin.lat()+elapsed*(map_object.animation.destination.lat()-map_object.animation.origin.lat()), 
-                        map_object.animation.origin.lng()+elapsed*(map_object.animation.destination.lng()-map_object.animation.origin.lng())
+                        map_object.interpolation.origin.lat()+elapsed*(map_object.interpolation.destination.lat()-map_object.interpolation.origin.lat()), 
+                        map_object.interpolation.origin.lng()+elapsed*(map_object.interpolation.destination.lng()-map_object.interpolation.origin.lng())
                     ));
                 } else {
-                    map_object.marker.setPosition(map_object.animation.destination);
-                    delete map_object.animation;
+                    map_object.action='idle';
+                    map_object.marker.setPosition(map_object.interpolation.destination);
+                    delete map_object.interpolation;
                 }
             }
             
             function animateMarker(map_object){
                 
-                if(map_object.type==='zombie'){
-                    // our zombie "walk" animation has 8 frames
-                    // with 125ms per frame that's one loop per second
-                    var sprite = Math.floor(new Date()/125)%8;
+                // our sprites have 8 directions
+                // so we segment the heading on n*45-22.5 degrees
+                var direction;
+                if(map_object.heading<-157.5)
+                    direction = 6;
+                else if(map_object.heading<-112.5)
+                    direction = 7;
+                else if(map_object.heading<-67.5)
+                    direction = 0;
+                else if(map_object.heading<-22.5)
+                    direction = 1;
+                else if(map_object.heading<22.5)
+                    direction = 2;
+                else if(map_object.heading<67.5)
+                    direction = 3;
+                else if(map_object.heading<112.5)
+                    direction = 4;
+                else if(map_object.heading<157.5)
+                    direction = 5;
+                else
+                    direction = 6;
+                
+                var sprite;
+                if(map_object.action=='idle'){
                     
-                    // our zombie sprite has 8 directions
-                    // so we segment the heading on n*45-22.5 degrees
-                    var direction;
-                    if(map_object.heading<-157.5)
-                        direction = 6;
-                    else if(map_object.heading<-112.5)
-                        direction = 7;
-                    else if(map_object.heading<-67.5)
-                        direction = 0;
-                    else if(map_object.heading<-22.5)
-                        direction = 1;
-                    else if(map_object.heading<22.5)
-                        direction = 2;
-                    else if(map_object.heading<67.5)
-                        direction = 3;
-                    else if(map_object.heading<112.5)
-                        direction = 4;
-                    else if(map_object.heading<157.5)
-                        direction = 5;
-                    else
-                        direction = 6;
-                    map_object.marker.icon.origin.x = (4 + sprite)*128;
-                    map_object.marker.icon.origin.y = direction*128;
+                    if(map_object.type==='zombie'){
+                
+                        // our zombie sprite "idle" animation has 4 frames
+                        // with 125ms per frame that's one loop per half sec
+                        sprite = Math.floor(new Date()/125)%4;
+                    
+                    } else {
+                        
+                        sprite = 4;
+                        
+                    }
+                    
+                } else {
+                    
+                    if(map_object.type==='zombie'){
+                
+                        // our zombie sprite "walk" animation has 8 frames
+                        // with 125ms per frame that's one loop per second
+                        sprite = 4 + Math.floor(new Date()/125)%8;
+                    
+                    } else {
+                
+                        // our user sprite "walk" animation has 8 frames
+                        // with 125ms per frame that's one loop per second
+                        sprite = Math.floor(new Date()/125)%8;
+                        
+                    }
+                
                 }
+                
+                if(map_object.type==='zombie'){
+                    map_object.marker.icon.origin.x = sprite*128;
+                    map_object.marker.icon.origin.y = direction*128;
+                } else {
+                    map_object.marker.icon.origin.x = sprite*96;
+                    map_object.marker.icon.origin.y = direction*96;
+                }
+                // triggers a redraw
+                map_object.marker.setPosition(map_object.marker.getPosition());
                 
             }
             
@@ -142,6 +182,7 @@
             zombieEngine.socket.emit('getallmarkers');
             
             zombieEngine.socket.on('addmarker', function(data){
+                //console.log(data);
                 if(map_objects[data.id]){
                     map_objects[data.id].marker.setMap(null);
                     delete map_objects[data.id].marker;
@@ -151,22 +192,31 @@
                     marker: new google.maps.Marker({
                         position: new google.maps.LatLng(data.pos[0], data.pos[1]),
                         title: data.name,
-                        icon: data.type==='user' ? 'img/human01_transparant.png' : {
+                        icon: data.type==='user' ? {
+                            url: 'img/user_sprite.png',
+                            size: new google.maps.Size(96, 96),
+                            origin: new google.maps.Point(0, 0),
+                            anchor: new google.maps.Point(48, 75),
+                            scaledSize: new google.maps.Size(768, 768)
+                        } : {
                             url: 'img/zombie_sprite.png',
                             size: new google.maps.Size(128, 128),
-                            origin: new google.maps.Point(4*128, 5*128),
+                            origin: new google.maps.Point(0, 0),
                             anchor: new google.maps.Point(64, 100)
-                          }
+                        }
                     }),
                     id: data.id,
                     type: data.type,
+                    interpolation: null,
                     animation: null,
-                    heading: 90
+                    heading: 180,
+                    lastposition: new Date(),
+                    action: 'idle'
                 };
                 (function(){
                     var map_object = map_objects[data.id];
                     var interval = setInterval(function(){
-                        if((!map_object && !clearInterval(interval)) || !map_object.animation) return;
+                        if(!map_object && !clearInterval(interval)) return;
                         interpolateMarker(map_object);
                         animateMarker(map_object);
                     },25);
@@ -183,25 +233,41 @@
                 
                 // get the current position of the marker
                 var currentPosition = map_objects[data.id].marker.getPosition();
+                var destinationPosition = new google.maps.LatLng(data.pos[0], data.pos[1]);
                 
                 //if(data.id=='npc1') console.log(currentPosition.x, currentPosition.y);
                 
                 // calculate the heading of the marker. we could use 
                 // google.maps.geometry.spherical.computeHeading but it's a 
                 // geodesic function so it will not work as expected
-                map_objects[data.id].heading = Math.atan2(data.pos[1]-currentPosition.lng(), data.pos[0]-currentPosition.lat())*180/Math.PI;
+                map_objects[data.id].heading = 180/Math.PI*Math.atan2(
+                    destinationPosition.lng()-currentPosition.lng(), 
+                    destinationPosition.lat()-currentPosition.lat()
+                );
                 
-                if(map_objects[data.id].animation){
-                    map_objects[data.id].animation.origin = currentPosition;
-                    map_objects[data.id].animation.destination = new google.maps.LatLng(data.pos[0], data.pos[1]);
-                    map_objects[data.id].animation.start = new Date();
-                } else {
-                    map_objects[data.id].animation = {
-                        origin: map_objects[data.id].marker.getPosition(),
-                        destination: new google.maps.LatLng(data.pos[0], data.pos[1]),
-                        start: new Date()
-                    };
-                }
+                // we calculate the moving speed and change animation accordingly
+                /*var speed = google.maps.geometry.spherical.computeDistanceBetween(currentPosition, destinationPosition, 6378100)/(new Date()-map_objects[data.id].lastposition)*1000;
+                if(speed>0.5)
+                    map_objects[data.id].action='moving';
+                else
+                    map_objects[data.id].action='idle';
+                map_objects[data.id].lastposition = new Date();*/
+        
+                // we calculate the distance for the interpolation timing
+                // the interpolation will be calculated at 1m/s with max 1 sec
+                var distance = google.maps.geometry.spherical.computeDistanceBetween(currentPosition, destinationPosition, 6378100);
+                var duration = Math.min(distance/(1/1000), 1000);
+                
+                if(!map_objects[data.id].interpolation)
+                    map_objects[data.id].interpolation = {};
+                
+                map_objects[data.id].interpolation.origin = currentPosition;
+                map_objects[data.id].interpolation.destination = destinationPosition;
+                map_objects[data.id].interpolation.start = new Date();
+                map_objects[data.id].interpolation.end = (new Date())*1 + duration;
+                
+                // start the walk animation
+                map_objects[data.id].action='moving';
                 
             });
 

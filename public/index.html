@@ -46,6 +46,11 @@
                     appId: '472417232873084'
                 });
                 
+                /* We don't autologin the user with facebook because if he
+                 * logs out of the game he is re-logged immediately. We rely 
+                 * only on the session cookie to bypass the login screen. 
+                 */
+                /*
                 FB.getLoginStatus(function(response) {
                     if (response.status === 'connected') {
                         // the user is logged in and has authenticated your
@@ -61,6 +66,7 @@
                         // the user isn't logged in to Facebook.
                     }
                 });
+                */
 
                 $('#fb-login-button').click(function(e){
                     e.preventDefault();

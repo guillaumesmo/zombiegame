@@ -23,8 +23,7 @@
         #account .ui-icon { background:  url(img/glyphish-icons/145-persondot.png) 50% 50% no-repeat;  background-size: 20px 24px; }
         
         #page-account {background: url(resident.jpg); background-position: 200% 60%;}
-        #data {color:white;}
-
+        
         //#map-canvas { position: absolute; top: 0; left: 0; right: 0; bottom: 0; }
         </style>
         
@@ -165,7 +164,6 @@
                 <div id="map-canvas" style="height:100%"></div>
             </div>
         </div>
-
         <div data-role="page" id="page-account">
             <div data-role="header">
                 <div data-role="navbar" class="nav-glyphish-example">
@@ -175,10 +173,9 @@
     		</ul>
     		</div>
             </div>
-           
-           <div data-role="content" id="data">
-                Username: <br/>
-                Email: <br/>
+           <div data-role="content">
+                <div><span id="ui-username" style="color:white">Username:</span></div>
+                <div><span id="ui-email" style="color:white">Email:</span></div>
                 <a data-role="button" data-theme="a" data-ajax="false" href="/logout" data-icon="alert" data-iconpos="left">Log out</a>
             </div>
 

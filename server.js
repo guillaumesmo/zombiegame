@@ -183,7 +183,7 @@ var databaseError = function(where, err, res){
 
 function getFacebookId(access_token, callback){
     
-    facebookApi.get('/me?fields=permissions,email,name?access_token=' + access_token, function(err, res) {
+    facebookApi.get('/me?fields=permissions,email,name&access_token=' + access_token, function(err, res) {
         if(err){
             console.log(new Date(), "facebook error");
             console.log(err);
@@ -228,7 +228,7 @@ app.post('/register-ajax', function(req, res) {
         }
         
         // add the user to the database
-        sqlConnection.query('INSERT INTO `users` SET username=?, email=?, password=md5(?)', [req.body.username, req.body.email, req.body.password], function(err, result) {
+        sqlConnection.query('INSERT INTO `users` SET auth="normal", username=?, email=?, password=md5(?)', [req.body.username, req.body.email, req.body.password], function(err, result) {
             if(err){
                 databaseError("/register-ajax (2)", err, res);
                 return;
@@ -254,7 +254,7 @@ app.post('/register-facebook-ajax', function(req, res) {
             }
         
             // add the user to the database
-            sqlConnection.query('INSERT INTO `users` SET username=?, email=?, facebook_id=?', [req.body.username, req.body.email, facebookId], function(err, result) {
+            sqlConnection.query('INSERT INTO `users` SET auth="facebook", username=?, email=?, facebook_id=?', [req.body.username, req.body.email, facebookId], function(err, result) {
                 if(err){
                     databaseError("/register-facebook-ajax", err, res);
                     return;
@@ -269,11 +269,10 @@ app.post('/register-facebook-ajax', function(req, res) {
     
 });
 
-function loginCallback(rows, req, res){
+function loginCallback(rows, req){
     
     console.log(new Date(), "User " + rows[0].username + " logged in successfully");
     req.session.user = {id: rows[0].id, username: rows[0].username};
-    res.json({result: true, userid: req.session.user.id});
     
 };
 
@@ -287,7 +286,8 @@ app.post('/login-ajax', function(req, res) {
         }
     
         if(rows.length===1){
-            loginCallback(rows, req, res);
+            loginCallback(rows, req);
+            res.json({result: true, userid: req.session.user.id});
         } else {
             res.json({result: false, error: 'Bad credentials'});
         }
@@ -316,7 +316,8 @@ app.get('/login-facebook', function(req, res) {
                 return;
             }
             if(rows.length===1){
-                loginCallback(rows, req, res);
+                loginCallback(rows, req);
+                res.redirect('/map.html');
             } else {
                 res.redirect('/register_facebook.html?access_token=' + req.query.access_token);
             }

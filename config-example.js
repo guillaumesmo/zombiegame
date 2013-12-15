@@ -7,6 +7,13 @@ module.exports = {
         user: 'root',
         password: '',
         database: 'zombiegame_db'
-    }
+    },
+    
+    facebook: {
+        appId: '123456',
+        appSecret: 'abcdef'
+    },
+    
+    cookiesSecret: '123abc'
     
 };

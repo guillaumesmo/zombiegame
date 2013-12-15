@@ -5,6 +5,8 @@ var haversine = require('haversine');
 var mysql = require('mysql');
 express = require('express.io');
 var app = express().http().io();
+var facebookApi = require('fbgraph');
+facebookApi.setAccessToken(config.facebook.appId + '|' + config.facebook.appSecret);
 
 // Required by session() middleware
 // pass the secret for signed cookies
@@ -12,7 +14,7 @@ var app = express().http().io();
 app.use(express.cookieParser());
 
 // required for sessions
-app.use(express.session({secret: 'notsosecret'}));
+app.use(express.session({secret: config.cookiesSecret}));
 
 // required for POST queries
 app.use(express.bodyParser());
@@ -215,6 +217,28 @@ app.post('/register-ajax', function(req, res) {
 });
 
 app.post('/login-ajax', function(req, res) {
+    
+    sqlConnection.query('SELECT id, username FROM `users` WHERE `username`=? AND password=md5(?) LIMIT 0,1', [req.body.username, req.body.password], function(err, rows) {
+    
+        if(err){
+            databaseError("/login-ajax (1)", err, res);
+            return;
+        }
+    
+        if(rows.length===1){
+            console.log(new Date(), "User " + rows[0].username + " logged in successfully");
+            req.session.user = {id: rows[0].id, username: rows[0].username};
+            res.json({result: true, userid: req.session.user.id});
+        } else {
+            res.json({result: false, error: 'Bad credentials'});
+        }
+    });
+    
+});
+
+app.get('/login-facebook', function(req, res) {
+    
+    req.query.
     
     sqlConnection.query('SELECT id, username FROM `users` WHERE `username`=? AND password=md5(?) LIMIT 0,1', [req.body.username, req.body.password], function(err, rows) {
     

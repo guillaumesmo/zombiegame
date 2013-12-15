@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html class="home">
+    <head>
+        <title>Zombie Game</title>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=320">
+        <script type="text/javascript" src="http://code.jquery.com/jquery-2.0.3.min.js"></script>
+        <script type="text/javascript" src="js/jquery.form.min.js"></script>
+        <script type="text/javascript">
+        function getURLParameter(name) {
+            return decodeURIComponent((new RegExp('[?|&]' + name + '=' + '([^&;]+?)(&|#|;|$)').exec(location.search)||[,""])[1].replace(/\+/g, '%20'))||null;
+        }
+        var accessToken = getURLParameter('accessToken');
+        if(!accessToken)
+            location.href='/';
+        $(function() {
+            
+            $.getScript('//connect.facebook.net/en_UK/all.js', function(){
+
+                FB.init({
+                    appId: '472417232873084'
+                });
+                
+                FB.api('/me', function(response) {
+                    if(response.username)
+                        $('input[name="username"]').val(response.username);
+                    if(response.email)
+                        $('input[name="email"]').val(response.email);
+                });
+
+            });
+            
+            $('input[name="accesstoken"]').val(accessToken);
+            
+            $('form').ajaxForm({
+                'success': function( data ){
+                    if(data.result){
+                        location.href="index.html";
+                    } else {
+                        alert(data.error);
+                    }
+                }
+            }); 
+        }); 
+        </script>
+        <link rel="stylesheet" type="text/css" href="css/style.css" />
+    </head>
+    <body>
+        <form action="register-facebook-ajax" method="post">
+            <input type="hidden" name="accesstoken" />
+            <div>
+                <label>Username</label>
+                <input type="text" name="username" required="required" placeholder="Username" pattern="[a-zA-Z0-9-_]{5,16}">
+            </div>
+            <div>
+                <label>Email</label>
+                <input type="email" name="email" required="required" placeholder="Email">
+            </div>
+            <div>
+                <input type="submit" value="Register me">
+            </div>
+        </form>
+    </body>
+</html>

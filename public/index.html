@@ -11,6 +11,11 @@
         function onLogIn(){
             location.href="map.html";
         }
+        function onFacebookLogIn(authResponse){
+            //var uid = authResponse.userID;
+            //var accessToken = authResponse.accessToken;
+            location.href="register_facebook.html?accessToken=" + authResponse.accessToken;
+        }
         
         $(function() {
             
@@ -25,7 +30,7 @@
             });
             
             $('form').ajaxForm({
-                'success': function( data, textStatus, jqXHR ){
+                'success': function( data ){
                     if(data.result){
                         onLogIn();
                     } else {
@@ -34,43 +39,42 @@
                 }
             }); 
             
-                //$.ajaxSetup({ cache: true });
-                $.getScript('//connect.facebook.net/en_UK/all.js', function(){
+            //$.ajaxSetup({ cache: true });
+            $.getScript('//connect.facebook.net/en_UK/all.js', function(){
 
-                        FB.init({
-                                appId: '472417232873084',
-                        });
-
-                        var $fbButton = $('#fb-login-button');
-
-                        $fbButton.click(function(e){
-                                e.preventDefault();
-
-                                FB.login(function(response) {
-                                        if (response.authResponse) {
-                                                gameClient.loadScreen('home');
-                                        } else {
-                                                alert('Come on, you can\'t slay zombies if you can\'t even log in ...');
-                                        }
-                                }, {scope: 'email'});
-                                /*window.location = "http://www.facebook.com/dialog/oauth/"
-                                        + "?" + "scope=" + "email"
-                                        + "&" + "client_id=" + '472417232873084'
-                                        + "&" + "redirect_uri=" + 'http://game.wavy.be/'
-                                        + "&" + "response_type=token";*/
-                        });
-
-                        /*if(window.location.hash && window.location.hash.length>0){
-                                var parts = {};
-                                $.each(window.location.hash.substring(1).split('&'), function(i, elem){
-                                        var temp = elem.split('=');
-                                        if(temp.length==2) parts[temp[0]]=temp[1];
-                                });
-                                console.log(parts);
-                                gameClient.loadScreen('home');
-                        }*/
-
+                FB.init({
+                    appId: '472417232873084'
                 });
+                
+                FB.getLoginStatus(function(response) {
+                    if (response.status === 'connected') {
+                        // the user is logged in and has authenticated your
+                        // app, and response.authResponse supplies
+                        // the user's ID, a valid access token, a signed
+                        // request, and the time the access token 
+                        // and signed request each expire
+                        onFacebookLogIn(response.authResponse);
+                    } else if (response.status === 'not_authorized') {
+                        // the user is logged in to Facebook, 
+                        // but has not authenticated your app
+                    } else {
+                        // the user isn't logged in to Facebook.
+                    }
+                });
+
+                $('#fb-login-button').click(function(e){
+                    e.preventDefault();
+                    
+                    FB.login(function(response) {
+                        if (response.authResponse) {
+                            onFacebookLogIn(response.authResponse);
+                        } else {
+                            alert('Come on, you can\'t slay zombies if you can\'t even log in ...');
+                        }
+                    }, {scope: 'email'});
+                });
+
+            });
         });
 
         </script>
@@ -93,7 +97,7 @@
         </form>
         <div style="margin-top: 20px;text-align: center;"><a href="register.html" style="color: white;">Create an account</a></div>
         <div style="margin-top: 50px;padding-top: 50px;text-align: center;border-top: 1px solid white;">
-                <a href="#" id="fb-login-button"><img src="img/loginwithfacebook.png" style="width: 300px;" /></a>
+            <a href="#" id="fb-login-button"><img src="img/loginwithfacebook.png" style="width: 300px;" /></a>
         </div>
     </body>
 </html>

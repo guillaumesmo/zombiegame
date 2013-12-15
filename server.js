@@ -131,7 +131,7 @@ var User = Class(Character, {
     
         // update the user position in database if it hasn't been done in the last 3 seconds
         if(this.lastpositionsave<(new Date()-3000)){
-            sqlConnection.query('UPDATE `users` SET lastposition=POINT(?, ?) WHERE id=?', [this.position[0], this.position[1], this.id], function(err, result) {
+            sqlConnection.query('UPDATE `users` SET lastposition=POINT(?, ?) WHERE id=?', [this.position[1], this.position[0], this.id], function(err, result) {
                 if(err){
                     databaseError("position", err);
                     return;

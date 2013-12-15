@@ -181,7 +181,22 @@ var databaseError = function(where, err, res){
     
 }
 
-app.post('/register-ajax', function(req, res) {
+function getFacebookId(access_token, callback){
+    
+    facebookApi.get('/me?fields=permissions,email,name?access_token=' + access_token, function(err, res) {
+        if(err){
+            console.log(new Date(), "facebook error");
+            console.log(err);
+        } else {
+            console.log(new Date(), "facebook data");
+            console.log(res);
+        }
+        callback(res && res.id ? res.id : null);
+    });
+    
+}
+
+function commonRegister(req, res, callback){
     
     sqlConnection.query('SELECT `id` FROM `users` WHERE `username`=? LIMIT 0,1', req.body.username, function(err, rows) {
         
@@ -195,6 +210,16 @@ app.post('/register-ajax', function(req, res) {
             res.json({result: false, error: 'This username is already taken'});
             return;
         }
+        
+        callback();
+        
+    });
+    
+}
+
+app.post('/register-ajax', function(req, res) {
+    
+    commonRegister(req, res, function() {
         
         // check if password and password repeat match
         if(req.body.password!==req.body.password2){
@@ -216,6 +241,42 @@ app.post('/register-ajax', function(req, res) {
     
 });
 
+app.post('/register-facebook-ajax', function(req, res) {
+    
+    commonRegister(req, res, function() {
+        
+        getFacebookId(req.body.accesstoken, function(facebookId){
+        
+            // check if password and password repeat match
+            if(!facebookId){
+                res.json({result: false, error: 'There is an error with the facebook login'});
+                return;
+            }
+        
+            // add the user to the database
+            sqlConnection.query('INSERT INTO `users` SET username=?, email=?, facebook_id=?', [req.body.username, req.body.email, facebookId], function(err, result) {
+                if(err){
+                    databaseError("/register-facebook-ajax", err, res);
+                    return;
+                }
+                console.log(new Date(), "User " + req.body.username + " registered successfully with facebook");
+                res.json({result: true});
+            });
+        
+        });
+        
+    });
+    
+});
+
+function loginCallback(rows, req, res){
+    
+    console.log(new Date(), "User " + rows[0].username + " logged in successfully");
+    req.session.user = {id: rows[0].id, username: rows[0].username};
+    res.json({result: true, userid: req.session.user.id});
+    
+};
+
 app.post('/login-ajax', function(req, res) {
     
     sqlConnection.query('SELECT id, username FROM `users` WHERE `username`=? AND password=md5(?) LIMIT 0,1', [req.body.username, req.body.password], function(err, rows) {
@@ -226,9 +287,7 @@ app.post('/login-ajax', function(req, res) {
         }
     
         if(rows.length===1){
-            console.log(new Date(), "User " + rows[0].username + " logged in successfully");
-            req.session.user = {id: rows[0].id, username: rows[0].username};
-            res.json({result: true, userid: req.session.user.id});
+            loginCallback(rows, req, res);
         } else {
             res.json({result: false, error: 'Bad credentials'});
         }
@@ -238,22 +297,31 @@ app.post('/login-ajax', function(req, res) {
 
 app.get('/login-facebook', function(req, res) {
     
-    req.query.
+    if(!req.query.access_token){
+        // redirect him to the homepage
+        res.redirect('/');
+        return;
+    }
     
-    sqlConnection.query('SELECT id, username FROM `users` WHERE `username`=? AND password=md5(?) LIMIT 0,1', [req.body.username, req.body.password], function(err, rows) {
+    getFacebookId(req.query.access_token, function(facebookId){
     
-        if(err){
-            databaseError("/login-ajax (1)", err, res);
+        if(!facebookId){
+            // redirect him to the homepage
+            res.redirect('/');
             return;
         }
-    
-        if(rows.length===1){
-            console.log(new Date(), "User " + rows[0].username + " logged in successfully");
-            req.session.user = {id: rows[0].id, username: rows[0].username};
-            res.json({result: true, userid: req.session.user.id});
-        } else {
-            res.json({result: false, error: 'Bad credentials'});
-        }
+        sqlConnection.query('SELECT * FROM `users` WHERE `auth`="facebook" AND `facebook_id`=? LIMIT 0,1', facebookId, function(err, rows) {
+            if(err){
+                databaseError("/login-facebook", err, res);
+                return;
+            }
+            if(rows.length===1){
+                loginCallback(rows, req, res);
+            } else {
+                res.redirect('/register_facebook.html?access_token=' + req.query.access_token);
+            }
+        });
+        
     });
     
 });

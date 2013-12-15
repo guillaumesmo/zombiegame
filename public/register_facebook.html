@@ -10,7 +10,7 @@
         function getURLParameter(name) {
             return decodeURIComponent((new RegExp('[?|&]' + name + '=' + '([^&;]+?)(&|#|;|$)').exec(location.search)||[,""])[1].replace(/\+/g, '%20'))||null;
         }
-        var accessToken = getURLParameter('accessToken');
+        var accessToken = getURLParameter('access_token');
         if(!accessToken)
             location.href='/';
         $(function() {
@@ -21,7 +21,7 @@
                     appId: '472417232873084'
                 });
                 
-                FB.api('/me', function(response) {
+                FB.api('/me?access_token=' + accessToken, function(response) {
                     if(response.username)
                         $('input[name="username"]').val(response.username);
                     if(response.email)

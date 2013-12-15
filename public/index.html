@@ -9,12 +9,12 @@
         <script type="text/javascript">
         
         function onLogIn(){
-            location.href="map.html";
+            location.href="/map.html";
         }
         function onFacebookLogIn(authResponse){
             //var uid = authResponse.userID;
             //var accessToken = authResponse.accessToken;
-            location.href="register_facebook.html?accessToken=" + authResponse.accessToken;
+            location.href="/login-facebook?access_token=" + authResponse.accessToken;
         }
         
         $(function() {

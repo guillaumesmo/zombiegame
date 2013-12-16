@@ -7,12 +7,17 @@
         <script type="text/javascript" src="http://code.jquery.com/jquery-2.0.3.min.js"></script>
         <script type="text/javascript" src="js/jquery.form.min.js"></script>
         <script type="text/javascript">
+        
         function getURLParameter(name) {
             return decodeURIComponent((new RegExp('[?|&]' + name + '=' + '([^&;]+?)(&|#|;|$)').exec(location.search)||[,""])[1].replace(/\+/g, '%20'))||null;
         }
+        
         var accessToken = getURLParameter('access_token');
         if(!accessToken)
             location.href='/';
+
+        //MAIN FUNCTION (WHEN PAGE IS LOADED)
+        
         $(function() {
             
             $.getScript('//connect.facebook.net/en_UK/all.js', function(){
@@ -42,9 +47,13 @@
                 }
             }); 
         }); 
+        
         </script>
         <link rel="stylesheet" type="text/css" href="css/style.css" />
     </head>
+    
+    <!-- HTML PART -->
+    
     <body>
         <form action="register-facebook-ajax" method="post">
             <input type="hidden" name="accesstoken" />

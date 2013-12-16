@@ -1,3 +1,4 @@
+//THE GAME-SOCKET CLASS
 
 var zombieEngine = {
     
@@ -35,6 +36,7 @@ var zombieEngine = {
     
 }
 
+//INTIALIZE
 $(function(){
     
     zombieEngine.initialize();

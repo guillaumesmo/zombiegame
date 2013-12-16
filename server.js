@@ -30,7 +30,7 @@ var sqlConnection; //for sql
 var onlineusers = {}; //the active 'real' users on the server
 var npcs = []; //the 'fake' Bots on the server
 
-//SUPER CLASS Character
+//PARENT CLASS Character (common for User & NPC)
 var Character = Class({
     _init: function() {
         this.icon = 'user';
@@ -38,10 +38,10 @@ var Character = Class({
     getPosition: function(){}
 });
 
-//NON-PLAYABLE-CHARACTER CLASS
+//NON-PLAYING-CHARACTER CLASS
 var NPC = Class(Character, {
 	
-	//Constructor
+    //Constructor
     _init: function(id) {
         
         this.parent._init.call(this);
@@ -94,7 +94,7 @@ var NPC = Class(Character, {
         return [0, 0];
         
     },
-    //Set a waypoint (when making the waypoint graph)
+    //Set the list of waypoint (when making the waypoint graph)
     setWayPoints: function(waypoints){
         
         var waypointsLengths = this.waypointsLengths(waypoints);
@@ -120,7 +120,7 @@ var NPC = Class(Character, {
     }
 });
 
-//PLAYABLE-CHARACTER CLASS = USER
+//PLAYING CHARACTER CLASS = USER
 var User = Class(Character, {
 	//Constructor
     _init: function(id, username) {
@@ -197,7 +197,7 @@ var databaseError = function(where, err, res){
     
 }
 
-//FUNCTION To get the facebookDATA
+//FUNCTION To get the facebook id
 function getFacebookId(access_token, callback){
     
     facebookApi.get('/me?fields=permissions,email,name&access_token=' + access_token, function(err, res) {
@@ -213,7 +213,7 @@ function getFacebookId(access_token, callback){
     
 }
 
-//FUNCTION To REGISTER
+// REGISTER HELPER FUNCTION
 function commonRegister(req, res, callback){
     
     sqlConnection.query('SELECT `id` FROM `users` WHERE `username`=? LIMIT 0,1', req.body.username, function(err, rows) {
@@ -348,7 +348,7 @@ app.get('/login-facebook', function(req, res) {
     
 });
 
-//ROUTE TO LOGOUT (using express) = delete the current user from the session.
+//ROUTE TO LOGOUT (using express) = delete the current user's session.
 app.get('/logout', function(req, res) {
     
     if(req.session.user){
@@ -362,7 +362,7 @@ app.get('/logout', function(req, res) {
     
 });
 
-//ROUTE TO CHEK LOG-IN (using express) = cheks whether user is already logged in to redirect to the game
+//ROUTE TO CHECK LOG-IN (using express) = checks whether user is already logged in to redirect to the game
 app.get('/checklogin-ajax', function(req, res) {
     
     if(!req.session.user){
@@ -385,7 +385,7 @@ app.get('/checklogin-ajax', function(req, res) {
     
 });
 
-//ROUTE THROUGH SOCKET TO SEND THE POSITION OF A USER
+//ROUTE TO SEND THE POSITION OF A USER (using socket.io)
 app.io.route('position', function(req) {
     if(!req.session.user){
         //console.log(new Date(), "Got position from unauthentified user");
@@ -417,7 +417,7 @@ app.io.route('position', function(req) {
     req.session.save();
 });
 
-//ROUTE THROUGH SOCKET TO DRAW ALL THE MARKERS
+//ROUTE TO GET ALL THE MARKERS (using socket.io)
 app.io.route('getallmarkers', function(req) {
     if(!req.session.user){
         return;
@@ -454,7 +454,7 @@ npc = new NPC(npcs.length+1);
 npc.setWayPoints([[50.8205740100116,4.394236207008362],[50.82047572959229,4.394166469573975],[50.82027239013701,4.39453661441803],[50.820994241195436,4.395722150802612],[50.8212077442997,4.3961405754089355],[50.821289078558834,4.396371245384216],[50.82144157991284,4.396902322769165],[50.82153646939283,4.397132992744446],[50.82163474757957,4.397245645523071],[50.82189569210608,4.397476315498352],[50.82230913369486,4.397803544998169],[50.822407410255316,4.397937655448914],[50.822702238695555,4.398345351219177],[50.823122450726096,4.398822784423828],[50.82325800218728,4.3989139795303345],[50.82398319582,4.398157596588135],[50.82409502374228,4.397969841957092],[50.82404758162614,4.3977391719818115],[50.823939142322516,4.397342205047607],[50.82394930851794,4.397138357162476],[50.82450844585673,4.396349787712097],[50.82427123689444,4.395861625671387],[50.82416957554167,4.395630955696106],[50.82402047182385,4.395620226860046],[50.82394591978638,4.395577311515808],[50.82391203245727,4.395496845245361],[50.823915421191295,4.395362734794617],[50.823898477518746,4.39527690410614],[50.82383070276706,4.395309090614319],[50.82360026787543,4.395309090614319],[50.82353249269086,4.395411014556885],[50.82309703478331,4.39540833234787],[50.82304111966049,4.395478069782257],[50.82268529458275,4.395470023155212],[50.82255990795682,4.395333230495453],[50.822420965626726,4.395325183868408],[50.82230913369486,4.395196437835693],[50.822078691293676,4.395244717597961],[50.822126135410414,4.395008683204651],[50.82217357947896,4.394659996032715],[50.822193912636415,4.394391775131226],[50.82229218943938,4.393962621688843],[50.822424354468964,4.3933939933776855],[50.8224853535872,4.392964839935303],[50.82251585311643,4.39277708530426],[50.822614129241785,4.39252495765686],[50.82259040743735,4.39227819442749],[50.822614129241785,4.39203143119812],[50.82258362977675,4.391843676567078],[50.822431132152694,4.3914735317230225],[50.82196685854204,4.391870498657227],[50.82190924762604,4.392648339271545],[50.82186858105434,4.392959475517273],[50.82181097001709,4.393104314804077],[50.82170930330737,4.393152594566345],[50.821580525157295,4.393184781074524],[50.82131280102439,4.393222332000732],[50.82102135275487,4.393340349197388],[50.820862072117876,4.393554925918579],[50.82071634680386,4.3937695026397705],[50.82062823360267,4.393930435180664],[50.8205773989879,4.3940430879592896]]);
 npcs.push(npc)
 
-// MAKE THEM MOVE AROUND ON THE MAP EVERY SECOND
+// SEND THEIR POSITION TO CLIENTS EVERY SECOND
 setInterval(function(){
     
     _.each(npcs, function(npc){

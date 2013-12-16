@@ -21,8 +21,11 @@
         #email .ui-icon { background:  url(img/glyphish-icons/18-envelope.png) 50% 50% no-repeat; background-size: 24px 16px;  }
         #skull .ui-icon { background:  url(img/glyphish-icons/21-skull.png) 50% 50% no-repeat;  background-size: 22px 24px; }
         #account .ui-icon { background:  url(img/glyphish-icons/145-persondot.png) 50% 50% no-repeat;  background-size: 20px 24px; }
+
+        #settings .ui-icon { background:  url(img/glyphish-icons/Setting-icon.png) 50% 50% no-repeat;  background-size: 35px 35px; }
+        #logout .ui-icon {background:  url(img/glyphish-icons/cute_ball_shutdown.png) 50% 50% no-repeat;  background-size: 30px 30px;}
         
-        #page-account {background: url(resident.jpg); background-position: 200% 60%;}
+        #page-account {background: url(img/account_background.jpg); background-position: 200% 60%;}
         
         //#map-canvas { position: absolute; top: 0; left: 0; right: 0; bottom: 0; }
         </style>
@@ -272,6 +275,16 @@
             });
 
         });
+        
+        function confirmBox(){
+             if (confirm('Are you sure you want to Exit ?')){
+                window.location.href = '/logout'
+            }
+            else {
+                window.location.href = ''
+            }
+        }
+
         </script>
     </head>
     <body>
@@ -279,32 +292,74 @@
         <div data-role="page" id="page-map">
             <div data-theme="a" data-role="header">
                 <div data-role="navbar" class="nav-glyphish-example">
-    		<ul>
+            <ul>
                     <li><a href="#page-map" id="map" data-icon="custom" class="ui-btn-active ui-state-persist">Map</a></li>
                     <li><a href="#page-account" id="account" data-icon="custom">Account</a></li>
-    		</ul>
-    		</div>
+                    <li><a href="#page-settings" id="settings" data-icon="custom">Settings</a></li>
+                    <li><a href="#page-logout" id="logout" data-icon="custom" onclick="confirmBox()">Log Out</a></li>
+            </ul>
+            </div>
             </div>
             <div data-role="content" id="content">
                 <div id="map-canvas" style="height:100%"></div>
             </div>
         </div>
+
+
         <div data-role="page" id="page-account">
             <div data-role="header">
                 <div data-role="navbar" class="nav-glyphish-example">
-    		<ul>
+            <ul>
                     <li><a href="#page-map" id="map" data-icon="custom">Map</a></li>
                     <li><a href="#page-account" id="account" data-icon="custom" class="ui-btn-active ui-state-persist">Account</a></li>
-    		</ul>
-    		</div>
+                    <li><a href="#page-settings" id="settings" data-icon="custom">Settings</a></li>
+                    <li><a href="#page-logout" id="logout" data-icon="custom" onclick="confirmBox()">Log Out</a></li>
+            </ul>
+            </div>
             </div>
            <div data-role="content">
                 <div><span id="ui-username" style="color:white">Username:</span></div>
                 <div><span id="ui-email" style="color:white">Email:</span></div>
                 <a data-role="button" data-theme="a" data-ajax="false" href="/logout" data-icon="alert" data-iconpos="left">Log out</a>
             </div>
-
         </div>
+
+
+          <div data-role="page" id="page-settings">
+            <div data-role="header">
+                <div data-role="navbar" class="nav-glyphish-example">
+            <ul>
+                    <li><a href="#page-map" id="map" data-icon="custom">Map</a></li>
+                    <li><a href="#page-account" id="account" data-icon="custom">Account</a></li>
+                    <li><a href="#page-settings" id="settings" data-icon="custom" class="ui-btn-active ui-state-persist">Settings</a></li>
+                    <li><a href="#page-logout" id="logout" data-icon="custom" onclick="confirmBox()">Log Out</a></li>
+            </ul>
+            </div>
+            </div>
+           <div data-role="content">
+                
+            </div>
+        </div>
+
+
+          <div data-role="page" id="page-logout">
+            <div data-role="header">
+                <div data-role="navbar" class="nav-glyphish-example">
+            <ul>
+                    <li><a href="#page-map" id="map" data-icon="custom">Map</a></li>
+                    <li><a href="#page-account" id="account" data-icon="custom">Account</a></li>
+                    <li><a href="#page-settings" id="settings" data-icon="custom">Settings</a></li>
+                    <li><a href="#page-logout" id="logout" data-icon="custom" class="ui-btn-active ui-state-persist" onclick="confirmBox()">Log Out</a></li>
+            </ul>
+            </div>
+            </div>
+           <div data-role="content">
+                <a data-role="button" data-theme="a" data-ajax="false" href="/logout" data-icon="alert" data-iconpos="left">Log out</a>
+            </div>
+        </div>
+
+
+
 
     </body>
 </html>

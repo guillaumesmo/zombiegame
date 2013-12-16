@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html>
     <head>
+    	<!--  IMPORTS AND INITIALIZATION  -->
+    	
         <title>Zombie Game</title>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
@@ -42,9 +44,11 @@
           src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCkehAoWctYivBAaHfObezGyywij4dC-n0&libraries=geometry&sensor=true">
         </script>
         <script type="text/javascript">
-        
+
+        <!-- MAP VARIABLE DECLARATION  -->        
         var map;
-        
+
+        <!-- PATH BUILDER  -->       
         var pathBuilder = {
             tempPath: null,
             listener: null,
@@ -86,9 +90,14 @@
                 });
             }
         };
-            
+
+
+
+
+        <!-- MAIN FUNCTION (EXECUTED WHEN PAGE LOADED)  -->            
         $(function() {
-            
+
+        	<!-- HELPER FUNCTION TO CALCULATE OBJECT POSITION  -->   
             function interpolateMarker(map_object){
                 if(!map_object.interpolation) return;
                 var elapsed = (new Date()-map_object.interpolation.start)/(map_object.interpolation.end-map_object.interpolation.start);
@@ -108,8 +117,8 @@
                 }
             }
             
-            function animateMarker(map_object){
-                
+        	<!-- HELPER FUNCTION TO CALCULATE THE ANIMATION PICS OF THE OBJECT  -->               
+            function animateMarker(map_object){                
                 // our sprites have 8 directions
                 // so we segment the heading on n*45-22.5 degrees
                 var direction;
@@ -133,66 +142,72 @@
                     direction = 6;
                 
                 var sprite;
-                if(map_object.action=='idle'){
-                    
-                    if(map_object.type==='zombie'){
                 
-                        // our zombie sprite "idle" animation has 4 frames
+                if(map_object.action=='idle')
+                {
+                    if(map_object.type==='zombie')
+                    {
+                		// our zombie sprite "idle" animation has 4 frames
                         // with 125ms per frame that's one loop per half sec
                         sprite = Math.floor(new Date()/125)%4;
-                    
-                    } else {
-                        
-                        sprite = 4;
-                        
-                    }
-                    
-                } else {
-                    
-                    if(map_object.type==='zombie'){
-                
-                        // our zombie sprite "walk" animation has 8 frames
+                    } 
+                    else 
+                    {                        
+                        sprite = 4;                       
+                    }    
+                } 
+                else 
+                {
+                    if(map_object.type==='zombie')
+                    {
+                		// our zombie sprite "walk" animation has 8 frames
                         // with 125ms per frame that's one loop per second
                         sprite = 4 + Math.floor(new Date()/125)%8;
-                    
-                    } else {
-                
-                        // our user sprite "walk" animation has 8 frames
+                    } else 
+                    {
+                		// our user sprite "walk" animation has 8 frames
                         // with 125ms per frame that's one loop per second
-                        sprite = Math.floor(new Date()/125)%8;
-                        
-                    }
-                
+                        sprite = Math.floor(new Date()/125)%8;                        
+                    }               
                 }
                 
-                if(map_object.type==='zombie'){
+                if(map_object.type==='zombie')
+                {
                     map_object.marker.icon.origin.x = sprite*128;
                     map_object.marker.icon.origin.y = direction*128;
-                } else {
+                } else 
+                {
                     map_object.marker.icon.origin.x = sprite*96;
                     map_object.marker.icon.origin.y = direction*96;
                 }
                 // triggers a redraw
-                map_object.marker.setPosition(map_object.marker.getPosition());
-                
+                map_object.marker.setPosition(map_object.marker.getPosition());                
             }
-            
-            map = new google.maps.Map(document.getElementById("map-canvas"), {
+
+
+            <!-- DECLARE THE MAP USING GOOGLEMAPS API (INITIALIZE ITS LOCATION TO VUB  -->     
+            map = new google.maps.Map(document.getElementById("map-canvas"), 
+            {
                 center: new google.maps.LatLng(50.82275, 4.395),
                 zoom: 16
             });
-            
+
+            <!-- DECLARE MAP_OBJECTS VARIABLE HOLDING ALL MAP_OBJECTS -->     
             var map_objects = {};
-            
+
+            <!-- REQUEST THE SERVER TO SEND ALL MARKERS TO CURRENT CLIENT THRUE THE SOCKET (see server.js) -->     
             zombieEngine.socket.emit('getallmarkers');
-            
+
+            <!-- WHENEVER THE SERVER ADD's A MARKER EXECUTE FOLLOWING FUNCTION IN ALL CLIENTS -->     
             zombieEngine.socket.on('addmarker', function(data){
-                //console.log(data);
+
+                // If the map_objects data.id already exists, delete it and its marker.
                 if(map_objects[data.id]){
                     map_objects[data.id].marker.setMap(null);
                     delete map_objects[data.id].marker;
                     delete map_objects[data.id];
                 }
+                // If not add the marker to the clients map_object variable and display the according data.
                 map_objects[data.id] = {
                     marker: new google.maps.Marker({
                         position: new google.maps.LatLng(data.pos[0], data.pos[1]),
@@ -218,6 +233,8 @@
                     lastposition: new Date(),
                     action: 'idle'
                 };
+	
+                // EXECUTE THE INTERPOLATION(POSITION) AND ANIMATION OF THE CURRENT MAP_OBJECT
                 (function(){
                     var map_object = map_objects[data.id];
                     var interval = setInterval(function(){
@@ -226,18 +243,22 @@
                         animateMarker(map_object);
                     },25);
                 })();
-                // To add the marker to the map, call setMap();
+                // AT LAST DISPLAY THE MARKER ON THE MAP BY CALLING setMap(); 
                 map_objects[data.id].marker.setMap(map);
             });
-            
+
+            <!-- WHENEVER THE SERVER MOVES A MARKER EXECUTE FOLLOWING FUNCTION IN ALL CLIENTS -->     
             zombieEngine.socket.on('movemarker', function(data){
+
+                //Chek whether the map_object send exists on the client.
                 if(!map_objects[data.id]){
                     console.log('Marker ' + data.id + ' doesn\'t exist');
                     return;
                 }
                 
-                // get the current position of the marker
+                // get the current position of the marker saved on the client
                 var currentPosition = map_objects[data.id].marker.getPosition();
+                // get the destination position send by the server.
                 var destinationPosition = new google.maps.LatLng(data.pos[0], data.pos[1]);
                 
                 //if(data.id=='npc1') console.log(currentPosition.x, currentPosition.y);
@@ -272,12 +293,12 @@
                 map_objects[data.id].interpolation.end = (new Date())*1 + duration;
                 
                 // start the walk animation
-                map_objects[data.id].action='moving';
-                
+                map_objects[data.id].action='moving';                
             });
-
         });
-        
+
+        <!-- HELPER FUNCTION WHEN USER LOGS OUT = change href to /logout -->     
+            
         function confirmBox(){
              if (confirm('Are you sure you want to log out ?')){
                 window.location.href = '/logout'
@@ -289,76 +310,74 @@
 
         </script>
     </head>
-    <body>
-        
+    
+    <!--  THE HTML PART  -->
+    
+    <body>       
         <div data-role="page" id="page-map">
             <div data-theme="a" data-role="header">
                 <div data-role="navbar" class="nav-glyphish-example">
-            <ul>
-                    <li><a href="#page-map" id="map" data-icon="custom" class="ui-btn-active ui-state-persist">Map</a></li>
-                    <li><a href="#page-account" id="account" data-icon="custom">Account</a></li>
-                    <li><a href="#page-settings" id="settings" data-icon="custom">Settings</a></li>
-                    <li><a href="#page-logout" id="logout" data-icon="custom" onclick="confirmBox()">Log Out</a></li>
-            </ul>
-            </div>
+           			<ul>
+                    	<li><a href="#page-map" id="map" data-icon="custom" class="ui-btn-active ui-state-persist">Map</a></li>
+                    	<li><a href="#page-account" id="account" data-icon="custom">Account</a></li>
+                    	<li><a href="#page-settings" id="settings" data-icon="custom">Settings</a></li>
+                    	<li><a href="#page-logout" id="logout" data-icon="custom" onclick="confirmBox()">Log Out</a></li>
+            		</ul>
+            	</div>
             </div>
             <div data-role="content" id="content">
-                <div id="map-canvas" style="height:100%"></div>
+            	<div id="map-canvas" style="height:100%"></div>
+        	</div>
+        </div>
+
+		<div data-role="page" id="page-account">
+            <div data-role="header">
+                <div data-role="navbar" class="nav-glyphish-example">
+            		<ul>
+                    	<li><a href="#page-map" id="map" data-icon="custom">Map</a></li>
+                    	<li><a href="#page-account" id="account" data-icon="custom" class="ui-btn-active ui-state-persist">Account</a></li>
+                    	<li><a href="#page-settings" id="settings" data-icon="custom">Settings</a></li>
+                    	<li><a href="#page-logout" id="logout" data-icon="custom" onclick="confirmBox()">Log Out</a></li>
+            		</ul>
+            	</div>
             </div>
+        	<div data-role="content">
+        		<div><span id="ui-username" style="color:white">Username:</span></div>
+            	<div><span id="ui-email" style="color:white">Email:</span></div>
+        	</div>
         </div>
 
 
-        <div data-role="page" id="page-account">
+        <div data-role="page" id="page-settings">
             <div data-role="header">
                 <div data-role="navbar" class="nav-glyphish-example">
-            <ul>
-                    <li><a href="#page-map" id="map" data-icon="custom">Map</a></li>
-                    <li><a href="#page-account" id="account" data-icon="custom" class="ui-btn-active ui-state-persist">Account</a></li>
-                    <li><a href="#page-settings" id="settings" data-icon="custom">Settings</a></li>
-                    <li><a href="#page-logout" id="logout" data-icon="custom" onclick="confirmBox()">Log Out</a></li>
-            </ul>
+            		<ul>
+                    	<li><a href="#page-map" id="map" data-icon="custom">Map</a></li>
+                    	<li><a href="#page-account" id="account" data-icon="custom">Account</a></li>
+                    	<li><a href="#page-settings" id="settings" data-icon="custom" class="ui-btn-active ui-state-persist">Settings</a></li>
+                    	<li><a href="#page-logout" id="logout" data-icon="custom" onclick="confirmBox()">Log Out</a></li>
+            		</ul>
+            	</div>
             </div>
-            </div>
-           <div data-role="content">
-                <div><span id="ui-username" style="color:white">Username:</span></div>
-                <div><span id="ui-email" style="color:white">Email:</span></div>
-            </div>
+           	<div data-role="content"></div>
         </div>
 
 
-          <div data-role="page" id="page-settings">
+       	<div data-role="page" id="page-logout">
             <div data-role="header">
                 <div data-role="navbar" class="nav-glyphish-example">
-            <ul>
-                    <li><a href="#page-map" id="map" data-icon="custom">Map</a></li>
-                    <li><a href="#page-account" id="account" data-icon="custom">Account</a></li>
-                    <li><a href="#page-settings" id="settings" data-icon="custom" class="ui-btn-active ui-state-persist">Settings</a></li>
-                    <li><a href="#page-logout" id="logout" data-icon="custom" onclick="confirmBox()">Log Out</a></li>
-            </ul>
-            </div>
-            </div>
-           <div data-role="content">
-                
-            </div>
-        </div>
-
-
-          <div data-role="page" id="page-logout">
-            <div data-role="header">
-                <div data-role="navbar" class="nav-glyphish-example">
-            <ul>
-                    <li><a href="#page-map" id="map" data-icon="custom">Map</a></li>
-                    <li><a href="#page-account" id="account" data-icon="custom">Account</a></li>
-                    <li><a href="#page-settings" id="settings" data-icon="custom">Settings</a></li>
-                    <li><a href="#page-logout" id="logout" data-icon="custom" class="ui-btn-active ui-state-persist" onclick="confirmBox()">Log Out</a></li>
-            </ul>
-            </div>
+            		<ul>
+                    	<li><a href="#page-map" id="map" data-icon="custom">Map</a></li>
+                    	<li><a href="#page-account" id="account" data-icon="custom">Account</a></li>
+                    	<li><a href="#page-settings" id="settings" data-icon="custom">Settings</a></li>
+                    	<li><a href="#page-logout" id="logout" data-icon="custom" class="ui-btn-active ui-state-persist" onclick="confirmBox()">Log Out</a></li>
+            		</ul>
+            	</div>
             </div>
             <div data-role="content">
                 <a data-role="button" data-theme="a" data-ajax="false" href="/logout" data-icon="alert" data-iconpos="left">Log Out</a>
             </div>
-        </div>
-    
-
-    </body>
+        </div>  
+	</body>
+	
 </html>

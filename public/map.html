@@ -104,10 +104,27 @@
             
         };
 
+		//function to redirect to index when not logged in
+		function onLogOut(){
+            location.href="/index.html";
+        }
 
         /* MAIN FUNCTION (EXECUTED WHEN PAGE LOADED)  */            
         $(function() {
 
+            $.getJSON('checklogin-ajax', function( data ) {
+                if(data.result){
+                    if(data.logged){ 
+
+				$('#userName').text(data.username);
+				$('#userEmail').text(data.email);
+						
+                    }
+                } else {
+					onLogOut();
+                }
+            });		
+	
         	/* HELPER FUNCTION TO CALCULATE OBJECT POSITION  */   
             function interpolateMarker(map_object){
                 if(!map_object.interpolation) return;
@@ -393,8 +410,11 @@
             	</div>
             </div>
         	<div data-role="content">
-        		<div><span id="ui-username" style="color:white">Username:</span></div>
-            	<div><span id="ui-email" style="color:white">Email:</span></div>
+        		<div><span id="ui-username" style="color:white">Username:</span>
+        			<span id="userName" style="color:white">someone</span>
+            	<div><span id="ui-email" style="color:white">Email:</span>
+					<span id="userEmail" style="color:white">someEmail:</span>
+			</div>
         	</div>
         </div>
 

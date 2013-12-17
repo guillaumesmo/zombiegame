@@ -372,8 +372,7 @@ app.post('/register-ajax', function(req, res) {
             }
             console.log(new Date(), "User " + req.body.username + " registered successfully");
             res.json({result: true});
-        });
-        
+        });        
     });
     
 });
@@ -409,7 +408,7 @@ app.post('/register-facebook-ajax', function(req, res) {
 function loginCallback(rows, req){
     
     console.log(new Date(), "User " + rows[0].username + " logged in successfully");
-    req.session.user = {id: rows[0].id, username: rows[0].username};
+    req.session.user = {id: rows[0].id, username: rows[0].username, email: rows[0].email};
     
 };
 
@@ -494,7 +493,7 @@ app.get('/checklogin-ajax', function(req, res) {
             return;
         }
         if(rows.length===1){
-            res.json({result: true, logged: true});
+            res.json({result: true, logged: true, username: rows[0].username, email: rows[0].email });
         } else {
             delete req.session.user;
             res.json({result: true, logged: false});

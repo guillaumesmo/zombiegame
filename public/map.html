@@ -19,13 +19,10 @@
         }
         .nav-glyphish-example .ui-btn .ui-btn-inner { padding-top: 40px !important; }
         .nav-glyphish-example .ui-btn .ui-icon { width: 30px!important; height: 30px!important; margin-left: -15px !important; box-shadow: none!important; -moz-box-shadow: none!important; -webkit-box-shadow: none!important; -webkit-border-radius: 0 !important; border-radius: 0 !important; }
-        #map .ui-icon { background:  url(img/glyphish-icons/07-map-marker.png) 50% 50% no-repeat; background-size: 16px 26px; }
-        #email .ui-icon { background:  url(img/glyphish-icons/18-envelope.png) 50% 50% no-repeat; background-size: 24px 16px;  }
-        #skull .ui-icon { background:  url(img/glyphish-icons/21-skull.png) 50% 50% no-repeat;  background-size: 22px 24px; }
-        #account .ui-icon { background:  url(img/glyphish-icons/145-persondot.png) 50% 50% no-repeat;  background-size: 20px 24px; }
-
-        #settings .ui-icon {background:  url(img/glyphish-icons/19-gear.png) 50% 50% no-repeat;  background-size: 22px 24px;}
-        #logout .ui-icon {background:  url(img/glyphish-icons/63-runner.png) 50% 50% no-repeat;  background-size: 22px 24px;}
+        a.map .ui-icon { background:  url(img/glyphish-icons/07-map-marker.png) 50% 50% no-repeat; background-size: 16px 26px; }
+        a.account .ui-icon { background:  url(img/glyphish-icons/145-persondot.png) 50% 50% no-repeat;  background-size: 20px 24px; }
+        a.settings .ui-icon {background:  url(img/glyphish-icons/19-gear.png) 50% 50% no-repeat;  background-size: 22px 24px;}
+        a.logout .ui-icon {background:  url(img/glyphish-icons/63-runner.png) 50% 50% no-repeat;  background-size: 22px 24px;}
         
         #page-account {background: url(img/account_background.jpg); background-position: 200% 60%;}
         #page-settings {background: url(img/images.jpg) no-repeat; background-position: 90% 0%;}
@@ -45,10 +42,10 @@
         </script>
         <script type="text/javascript">
 
-        <!-- MAP VARIABLE DECLARATION  -->        
+        /* MAP VARIABLE DECLARATION  */        
         var map;
 
-        <!-- PATH BUILDER  -->       
+        /* PATH BUILDER  */       
         var pathBuilder = {
             tempPath: null,
             listener: null,
@@ -94,10 +91,10 @@
 
 
 
-        <!-- MAIN FUNCTION (EXECUTED WHEN PAGE LOADED)  -->            
+        /* MAIN FUNCTION (EXECUTED WHEN PAGE LOADED)  */            
         $(function() {
 
-        	<!-- HELPER FUNCTION TO CALCULATE OBJECT POSITION  -->   
+        	/* HELPER FUNCTION TO CALCULATE OBJECT POSITION  */   
             function interpolateMarker(map_object){
                 if(!map_object.interpolation) return;
                 var elapsed = (new Date()-map_object.interpolation.start)/(map_object.interpolation.end-map_object.interpolation.start);
@@ -117,7 +114,7 @@
                 }
             }
             
-        	<!-- HELPER FUNCTION TO CALCULATE THE ANIMATION PICS OF THE OBJECT  -->               
+        	/* HELPER FUNCTION TO CALCULATE THE ANIMATION PICS OF THE OBJECT  */               
             function animateMarker(map_object){                
                 // our sprites have 8 directions
                 // so we segment the heading on n*45-22.5 degrees
@@ -185,20 +182,20 @@
             }
 
 
-            <!-- DECLARE THE MAP USING GOOGLEMAPS API (INITIALIZE ITS LOCATION TO VUB  -->     
+            /* DECLARE THE MAP USING GOOGLEMAPS API (INITIALIZE ITS LOCATION TO VUB  */     
             map = new google.maps.Map(document.getElementById("map-canvas"), 
             {
                 center: new google.maps.LatLng(50.82275, 4.395),
                 zoom: 16
             });
 
-            <!-- DECLARE MAP_OBJECTS VARIABLE HOLDING ALL MAP_OBJECTS -->     
+            /* DECLARE MAP_OBJECTS VARIABLE HOLDING ALL MAP_OBJECTS */     
             var map_objects = {};
 
-            <!-- REQUEST THE SERVER TO SEND ALL MARKERS TO CURRENT CLIENT THRUE THE SOCKET (see server.js) -->     
+            /* REQUEST THE SERVER TO SEND ALL EXISTING MARKERS TO CURRENT CLIENT */     
             zombieEngine.socket.emit('getallmarkers');
 
-            <!-- WHENEVER THE SERVER ADD's A MARKER EXECUTE FOLLOWING FUNCTION IN ALL CLIENTS -->     
+            /* WHENEVER THE SERVER ADD's A MARKER EXECUTE FOLLOWING FUNCTION */     
             zombieEngine.socket.on('addmarker', function(data){
 
                 // If the map_objects data.id already exists, delete it and its marker.
@@ -264,7 +261,7 @@
                     action: 'idle'
                 };
 	
-                // EXECUTE THE INTERPOLATION(POSITION) AND ANIMATION OF THE CURRENT MAP_OBJECT
+                // START THE INTERPOLATION(POSITION) AND ANIMATION OF THE CURRENT MAP_OBJECT
                 (function(){
 
                     if( map_objects[data.id].type == 'shield' || map_objects[data.id].type == 'radar' 
@@ -281,7 +278,7 @@
                 map_objects[data.id].marker.setMap(map);
             });
 
-            <!-- WHENEVER THE SERVER MOVES A MARKER EXECUTE FOLLOWING FUNCTION IN ALL CLIENTS -->     
+            /* WHENEVER THE SERVER MOVES A MARKER EXECUTE FOLLOWING FUNCTION */     
             zombieEngine.socket.on('movemarker', function(data){
 
                 //Chek whether the map_object send exists on the client.
@@ -304,14 +301,6 @@
                     destinationPosition.lng()-currentPosition.lng(), 
                     destinationPosition.lat()-currentPosition.lat()
                 );
-                
-                // we calculate the moving speed and change animation accordingly
-                /*var speed = google.maps.geometry.spherical.computeDistanceBetween(currentPosition, destinationPosition, 6378100)/(new Date()-map_objects[data.id].lastposition)*1000;
-                if(speed>0.5)
-                    map_objects[data.id].action='moving';
-                else
-                    map_objects[data.id].action='idle';
-                map_objects[data.id].lastposition = new Date();*/
         
                 // we calculate the distance for the interpolation timing
                 // the interpolation will be calculated at 1m/s with max 1 sec
@@ -331,16 +320,13 @@
             });
         });
 
-        <!-- HELPER FUNCTION WHEN USER LOGS OUT = change href to /logout -->     
-            
-        function confirmBox(){
-             if (confirm('Are you sure you want to log out ?')){
+        /* HELPER FUNCTION WHEN USER LOGS OUT = change href to /logout */     
+        $('a.logout').click(function(e){
+            e.preventDefault();
+            if (confirm('Are you sure you want to log out ?')){
                 window.location.href = '/logout'
             }
-            else {
-                window.location.href = '#page-logout'
-            }
-        }
+        });
 
         </script>
     </head>
@@ -351,12 +337,12 @@
         <div data-role="page" id="page-map">
             <div data-theme="a" data-role="header">
                 <div data-role="navbar" class="nav-glyphish-example">
-           			<ul>
-                    	<li><a href="#page-map" id="map" data-icon="custom" class="ui-btn-active ui-state-persist">Map</a></li>
-                    	<li><a href="#page-account" id="account" data-icon="custom">Account</a></li>
-                    	<li><a href="#page-settings" id="settings" data-icon="custom">Settings</a></li>
-                    	<li><a href="#page-logout" id="logout" data-icon="custom" onclick="confirmBox()">Log Out</a></li>
-            		</ul>
+                    <ul>
+                    	<li><a href="#page-map" data-icon="custom" class="map ui-btn-active ui-state-persist">Map</a></li>
+                    	<li><a href="#page-account" data-icon="custom" class="account">Account</a></li>
+                    	<li><a href="#page-settings" data-icon="custom" class="settings">Settings</a></li>
+                    	<li><a href="#" data-icon="custom" class="logout">Log Out</a></li>
+                    </ul>
             	</div>
             </div>
             <div data-role="content" id="content">
@@ -367,12 +353,12 @@
 		<div data-role="page" id="page-account">
             <div data-role="header">
                 <div data-role="navbar" class="nav-glyphish-example">
-            		<ul>
-                    	<li><a href="#page-map" id="map" data-icon="custom">Map</a></li>
-                    	<li><a href="#page-account" id="account" data-icon="custom" class="ui-btn-active ui-state-persist">Account</a></li>
-                    	<li><a href="#page-settings" id="settings" data-icon="custom">Settings</a></li>
-                    	<li><a href="#page-logout" id="logout" data-icon="custom" onclick="confirmBox()">Log Out</a></li>
-            		</ul>
+                    <ul>
+                    	<li><a href="#page-map" data-icon="custom" class="map">Map</a></li>
+                    	<li><a href="#page-account" data-icon="custom" class="account ui-btn-active ui-state-persist">Account</a></li>
+                    	<li><a href="#page-settings" data-icon="custom" class="settings">Settings</a></li>
+                    	<li><a href="#" data-icon="custom" class="logout">Log Out</a></li>
+                    </ul>
             	</div>
             </div>
         	<div data-role="content">
@@ -385,33 +371,17 @@
         <div data-role="page" id="page-settings">
             <div data-role="header">
                 <div data-role="navbar" class="nav-glyphish-example">
-            		<ul>
-                    	<li><a href="#page-map" id="map" data-icon="custom">Map</a></li>
-                    	<li><a href="#page-account" id="account" data-icon="custom">Account</a></li>
-                    	<li><a href="#page-settings" id="settings" data-icon="custom" class="ui-btn-active ui-state-persist">Settings</a></li>
-                    	<li><a href="#page-logout" id="logout" data-icon="custom" onclick="confirmBox()">Log Out</a></li>
-            		</ul>
+                    <ul>
+                    	<li><a href="#page-map" data-icon="custom" class="map">Map</a></li>
+                    	<li><a href="#page-account" data-icon="custom" class="account">Account</a></li>
+                    	<li><a href="#page-settings" data-icon="custom" class="settings ui-btn-active ui-state-persist">Settings</a></li>
+                    	<li><a href="#" data-icon="custom" class="logout">Log Out</a></li>
+                    </ul>
             	</div>
             </div>
            	<div data-role="content"></div>
         </div>
-
-
-       	<div data-role="page" id="page-logout">
-            <div data-role="header">
-                <div data-role="navbar" class="nav-glyphish-example">
-            		<ul>
-                    	<li><a href="#page-map" id="map" data-icon="custom">Map</a></li>
-                    	<li><a href="#page-account" id="account" data-icon="custom">Account</a></li>
-                    	<li><a href="#page-settings" id="settings" data-icon="custom">Settings</a></li>
-                    	<li><a href="#page-logout" id="logout" data-icon="custom" class="ui-btn-active ui-state-persist" onclick="confirmBox()">Log Out</a></li>
-            		</ul>
-            	</div>
-            </div>
-            <div data-role="content">
-                <a data-role="button" data-theme="a" data-ajax="false" href="/logout" data-icon="alert" data-iconpos="left">Log Out</a>
-            </div>
-        </div>  
-	</body>
+        
+    </body>
 	
 </html>

@@ -101,7 +101,7 @@ var Item = Class(MapObject, {
             	var range = (Math.random() * 0.009) + 0.001;
             	this.setPosition(50.8228 + ((Math.random() * (range))-range/2) , 4.395 + ((Math.random() *(range))-range/2) );
                 this.respawn();
-            }, this), (Math.random() * 110000)+1000);
+            }, this), Math.floor((Math.random() * 110000)+1000));
         }
     }
 });

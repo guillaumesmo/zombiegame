@@ -87,6 +87,22 @@
                 });
             }
         };
+        
+        function overrideGeolocation(){
+            
+            google.maps.event.addListener(map, 'click', function(event) {
+
+                zombieEngine.socket.emit('position', {
+                    coords: { 
+                        latitude: event.latLng.lat(), 
+                        longitude: event.latLng.lng(),
+                    },
+                    timestamp: Date.now() 
+                });
+
+            });
+            
+        };
 
 
         /* MAIN FUNCTION (EXECUTED WHEN PAGE LOADED)  */            
@@ -281,6 +297,17 @@
                 // AT LAST DISPLAY THE MARKER ON THE MAP BY CALLING setMap(); 
                 map_objects[data.id].marker.setMap(map);
             });
+            
+            /* WHENEVER THE SERVER REMOVES A MARKER EXECUTE FOLLOWING FUNCTION */     
+            zombieEngine.socket.on('removemarker', function(data){
+
+                if(map_objects[data.id]){
+                    map_objects[data.id].marker.setMap(null);
+                    delete map_objects[data.id].marker;
+                    delete map_objects[data.id];
+                }
+                
+            });
 
             /* WHENEVER THE SERVER MOVES A MARKER EXECUTE FOLLOWING FUNCTION */     
             zombieEngine.socket.on('movemarker', function(data){
@@ -320,16 +347,17 @@
                 map_objects[data.id].interpolation.end = (new Date())*1 + duration;
                 
                 // start the walk animation
-                map_objects[data.id].action='moving';                
-                
-                /* HELPER FUNCTION WHEN USER LOGS OUT = change href to /logout */     
-                $('a.logout').click(function(e){
-                    e.preventDefault();
-                    if (confirm('Are you sure you want to log out ?')){
-                        window.location.href = '/logout'
-                    }
-                });
+                map_objects[data.id].action='moving';
             });
+                
+            /* HELPER FUNCTION WHEN USER LOGS OUT = change href to /logout */     
+            $('a.logout').click(function(e){
+                e.preventDefault();
+                if (confirm('Are you sure you want to log out ?')){
+                    window.location.href = '/logout'
+                }
+            });
+                
         });
         </script>
     </head>
@@ -344,7 +372,7 @@
                     	<li><a href="#page-map" data-icon="custom" class="map ui-btn-active ui-state-persist">Map</a></li>
                     	<li><a href="#page-account" data-icon="custom" class="account">Account</a></li>
                     	<li><a href="#page-settings" data-icon="custom" class="settings">Settings</a></li>
-                    	<li><a href="#" data-icon="custom" class="logout">Log Out</a></li>
+                    	<li><a href="#" data-ajax="false" data-icon="custom" class="logout">Log Out</a></li>
                     </ul>
             	</div>
             </div>
@@ -360,7 +388,7 @@
                     	<li><a href="#page-map" data-icon="custom" class="map">Map</a></li>
                     	<li><a href="#page-account" data-icon="custom" class="account ui-btn-active ui-state-persist">Account</a></li>
                     	<li><a href="#page-settings" data-icon="custom" class="settings">Settings</a></li>
-                    	<li><a href="#" data-icon="custom" class="logout">Log Out</a></li>
+                    	<li><a href="#" data-ajax="false" data-icon="custom" class="logout">Log Out</a></li>
                     </ul>
             	</div>
             </div>
@@ -378,7 +406,7 @@
                     	<li><a href="#page-map" data-icon="custom" class="map">Map</a></li>
                     	<li><a href="#page-account" data-icon="custom" class="account">Account</a></li>
                     	<li><a href="#page-settings" data-icon="custom" class="settings ui-btn-active ui-state-persist">Settings</a></li>
-                    	<li><a href="#" data-icon="custom" class="logout">Log Out</a></li>
+                    	<li><a href="#" data-ajax="false" data-icon="custom" class="logout">Log Out</a></li>
                     </ul>
             	</div>
             </div>

@@ -32,30 +32,40 @@ app.use(express.static(__dirname + '/public'));
 
 
 //DECLARATION OF VARIABLES
-var sqlConnection; //for sql
-
-
-var onlineusers = {}; //the active 'real' users on the server
-
+var sqlConnection; // for sql
+var mapObjects = []; // Array for MapObjects
 
 // Superclass for objects on the map
 var MapObject = Class({
     _init: function() {
         this.icon = null;
     },
+    getId: function(){
+        return mapObjects.indexOf(this);
+    },
+    getData: function(){
+        return {
+            id: 'object' + this.getId(),
+            pos: this.getPosition(),
+            name: "",
+            type: this.icon
+        }
+    },
     getPosition: function(){},
+    resetCollisions: function(){},
     handleCollision: function(object, distance){}
 });
 
-// Array of MapObjects
-var mapObjects = [];
 
 // Abstract Item class
 // These objects respawn regularly and have a fixed position
 var Item = Class(MapObject, {
-    _init: function() {
+    _init: function(type) {
         this.parent._init.call(this);
         this.position = null;
+        this.type = type;
+        this.icon = type;
+        this.visible = true;
     },
     // Get the position
     getPosition: function(){
@@ -65,37 +75,52 @@ var Item = Class(MapObject, {
     setPosition: function(lat, lng){    	
         this.position = [lat, lng];        
     },
+    // Function that is called when the object should appear again
+    respawn: function(){    	
+        this.visible=true;
+        app.io.broadcast('addmarker', this.getData());
+    },
     handleCollision: function(object, distance){
-        if(object instanceof User && distance<10){
-            console.log("collision with item", object);
+        if(this.visible && object instanceof User && distance<10){
+            console.log("User " + object.username + " has found an item (" + this.type + ")");
+            
+            // add the item to the user's inventory
+            object.addInventory(this.type);
+            
+            // make the item invisible
+            this.visible=false;
+            
+            // broadcast the clients to remove the item from the map
+            app.io.broadcast('removemarker', {
+                id: 'object' + this.getId()
+            });
+            
+            // respawn in 10 seconds
+            setTimeout(_.bind(function(){
+                this.respawn();
+            }, this), 10000);
         }
     }
 });
 
 var Shield = Class(Item, {
     //Constructor
-    _init: function(id) {
-        this.parent._init.call(this);
-        this.icon = 'shield';
-        this.id = id;		
+    _init: function() {
+        this.parent._init.call(this, 'shield');
     }
 })
 
 var Radar = Class(Item, {
     //Constructor
-    _init: function(id) {
-        this.parent._init.call(this);
-        this.icon = 'radar';
-        this.id = id;
+    _init: function() {
+        this.parent._init.call(this, 'radar');
     }
 })
 
 var Needle = Class(Item, {
     //Constructor
     _init: function(id) {
-        this.parent._init.call(this);
-        this.icon = 'needle';
-        this.id = id;
+        this.parent._init.call(this, 'needle');
     }
 })
 
@@ -184,7 +209,7 @@ var NPC = Class(MapObject, {
 //PLAYING CHARACTER CLASS = USER
 var User = Class(MapObject, {
     //Constructor
-    _init: function(id, username) {
+    _init: function(id, username, websocket) {
         this.parent._init.call(this);
         this.icon = 'user';
         this.id = id;
@@ -192,10 +217,17 @@ var User = Class(MapObject, {
         this.lastposition = 0;
         this.lastpositionsave = 0;
         this.position = null;
+        this.websocket = websocket;
+        this.inventory = [];
     },
     //Get the position
     getPosition: function(){
         return this.position;
+    },
+    getData: function(){
+        var data = this.parent.getData.call(this);
+        data.name = this.username;
+        return data;
     },
     //Set the position
     setPosition: function(lat, lng){
@@ -214,6 +246,14 @@ var User = Class(MapObject, {
             this.lastpositionsave=new Date();
         }
         
+    },
+    addInventory: function(type){
+        this.inventory.push(type);
+    },
+    removeInventory: function(type){
+        var index = this.inventory.indexOf(type);
+        if(index != -1)
+            this.inventory.splice(index);
     }
 });
 
@@ -476,22 +516,25 @@ app.io.route('position', function(req) {
     //console.log('Position data for user  ' + req.session.user.id + ':', req.data);
     
     // create a memory user instance if not existing
-    if(!onlineusers[req.session.user.id]){
-        onlineusers[req.session.user.id] = new User(req.session.user.id, req.session.user.username);
-        onlineusers[req.session.user.id].setPosition(req.data.coords.latitude, req.data.coords.longitude);
-        req.session.user.markerId = mapObjects.length;
-        mapObjects.push(onlineusers[req.session.user.id]);
+    if(!req.session.user.objectId){
+        var user = new User(req.session.user.id, req.session.user.username, req.socket);
+        req.session.user.objectId = mapObjects.length;
+        mapObjects.push(user);
         app.io.broadcast('addmarker', {
-            id: 'object' + req.session.user.markerId,
+            id: 'object' + req.session.user.objectId,
             pos: [req.data.coords.latitude, req.data.coords.longitude],
             name: req.session.user.username,
             type: 'user'
         });	
     }
-    // finally move the marker and broadcast it to all clients
-    mapObjects[req.session.user.markerId].setPosition(req.data.coords.latitude, req.data.coords.longitude);
     app.io.broadcast('movemarker', {
-        id: 'object' + req.session.user.markerId,
+        id: 'object' + req.session.user.objectId,
+        pos: [req.data.coords.latitude, req.data.coords.longitude]
+    });
+    // finally move the marker and broadcast it to all clients
+    mapObjects[req.session.user.objectId].setPosition(req.data.coords.latitude, req.data.coords.longitude);
+    app.io.broadcast('movemarker', {
+        id: 'object' + req.session.user.objectId,
         pos: [req.data.coords.latitude, req.data.coords.longitude]
     });
     
@@ -505,15 +548,13 @@ app.io.route('getallmarkers', function(req) {
     }
     
     _.each(mapObjects, function(object, index){
-        var name = "";
-        if(object instanceof User)
-            name = object.username;
-        req.io.emit('addmarker', {
-            id: 'object' + index,
-            pos: object.getPosition(),
-            name: name,
-            type: object.icon
-        });
+        
+        // don't send if it's an invisible item
+        if(object instanceof Item && !object.visible)
+            return;
+        
+        req.io.emit('addmarker', object.getData());
+        
     });
     
     req.session.save();

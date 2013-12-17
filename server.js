@@ -44,6 +44,9 @@ var MapObject = Class({
     getId: function(){
         return mapObjects.indexOf(this);
     },
+    getIcon: function(){
+        return this.icon;
+    },
     getData: function(){
         return {
             id: 'object' + this.getId(),
@@ -232,6 +235,11 @@ var User = Class(MapObject, {
         this.isZombie = false;
         this.visibleUsers = [];
         this.oldVisibleUsers = [];
+        this.objectEffects = {
+            radar: new Date(),
+            goggles: new Date(),
+            shield: new Date()
+        };
     },
     //Get the position
     getPosition: function(){
@@ -241,6 +249,24 @@ var User = Class(MapObject, {
         var data = this.parent.getData.call(this);
         data.name = this.username;
         return data;
+    },
+    getIcon: function(){
+        return this.isZombie ? 'zombie' : 'user';
+    },
+    setZombie: function(isZombie){
+        if(this.isZombie==isZombie)
+            return;
+        this.isZombie=isZombie;
+        // send the new marker to anyone who can see this user (including yourself)
+        var id = this.getId();
+        _.each(mapObjects, function(object){
+            if(object instanceof User && (_.contains(object.oldVisibleUsers, this) || object===this)){
+                object.websocket.emit('removemarker', {
+                    id: 'object' + id
+                });
+                object.websocket.emit('addmarker', this.getData());
+            }
+        }, this);
     },
     //Set the position
     setPosition: function(lat, lng){
@@ -279,11 +305,32 @@ var User = Class(MapObject, {
     },
     removeInventory: function(type){
         var index = this.inventory.indexOf(type);
-        if(index != -1)
+        if(index != -1){
             this.inventory.splice(index);
+            return true;
+        }
+        return false;
+    },
+    useInventory: function(type){
+        if(!this.removeInventory(type)){
+            // the user tried to cheat probably
+            return;
+        }
+        if(type==='radar')
+            this.objectEffects.radar = (new Date())*1+5000; // activate radar for 5 seconds
+        else if(type==='goggles')
+            this.objectEffects.goggles = (new Date())*1+3*60000; // activate radar for 3 minutes
+        else if(type==='needle')
+            this.setZombie(false); // change the user to a human
     },
     handleCollision: function(object, distance){
-        if(object instanceof User && distance<100){
+        if(
+            (object instanceof User && distance<100) // everybody can be seen in a distance of 100m
+            || (object instanceof User && object.isZombie && (
+                this.objectEffects.radar>new Date() // when radar is active, all zombies can be seen
+                || (this.objectEffects.goggles>new Date() && distance<300) // when goggles is active, zombies can be seen at 300m
+            ))
+        ){
             
             // add the other user to the list of users he sees
             this.visibleUsers.push(object);
@@ -294,6 +341,16 @@ var User = Class(MapObject, {
                 this.websocket.emit('addmarker', object.getData());
             }
             
+        }
+        
+        if(
+            (object instanceof User && object.isZombie && distance<5)
+            || (object instanceof NPC)
+        ){
+            if(this.objectEffects.shield>new Date() || this.removeInventory('shield'))
+                this.objectEffects.shield = (new Date())*1+5000;
+            else
+                this.setZombie(true); // the human is now infected
         }
     },
     endCollisions: function(){
@@ -622,9 +679,9 @@ app.post('/inventory-use-ajax', function(req, res) {
         return;
     }
     
+    mapObjects[req.session.user.objectId].useInventory(req.body.type);
     
-    
-    res.json({result: true, inventory: mapObjects[req.session.user.objectId].inventory});
+    res.json({result: true});
     
 });
 

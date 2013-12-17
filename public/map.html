@@ -88,7 +88,6 @@
             }
         };
 
-
 		//function to redirect to index when not logged in
 		function onLogOut(){
             location.href="/index.html";
@@ -101,8 +100,8 @@
                 if(data.result){
                     if(data.logged){ 
 
-				document.getElementById("userName").innerHTML = data.username;
-				document.getElementById("userEmail").innerHTML = data.email;
+				$('#userName').text(data.username);
+				$('#userEmail').text(data.email);
 						
                     }
                 } else {

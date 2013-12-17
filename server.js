@@ -275,6 +275,7 @@ function getFacebookId(access_token, callback){
 }
 
 //TWITTER
+/*
 twitter.search("show", {
         q: "%23zombies"
     },
@@ -288,6 +289,7 @@ twitter.search("show", {
         }
     }
 );
+*/
 
 // REGISTER HELPER FUNCTION
 function commonRegister(req, res, callback){

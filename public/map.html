@@ -89,8 +89,6 @@
         };
 
 
-
-
         /* MAIN FUNCTION (EXECUTED WHEN PAGE LOADED)  */            
         $(function() {
 
@@ -187,6 +185,12 @@
             {
                 center: new google.maps.LatLng(50.82275, 4.395),
                 zoom: 16
+            });
+
+            google.maps.event.addListener(map, 'click', function(event) {
+
+                console.log(event.latLng.lat(), event.latLng.lng());
+
             });
 
             /* DECLARE MAP_OBJECTS VARIABLE HOLDING ALL MAP_OBJECTS */     

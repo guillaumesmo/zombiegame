@@ -104,8 +104,8 @@
             
         };
 
-		//function to redirect to index when not logged in
-		function onLogOut(){
+        //function to redirect to index when not logged in
+        function onLogOut(){
             location.href="/index.html";
         }
 
@@ -280,8 +280,7 @@
                         origin: new google.maps.Point(0, 0),
                         anchor: new google.maps.Point(25, 25)
                     };
-                }
- 				  else if(data.type === 'goggles') {
+                } else if(data.type === 'goggles') {
                     icon = {
                         url: 'img/zombieGogglesGood.png',
                         size: new google.maps.Size(50, 50),
@@ -409,6 +408,7 @@
                                 if(value=='shield') name='Shield';
                                 else if(value=='radar') name='Radar';
                                 else if(value=='needle') name='Needle';
+                                else if(value=='goggles') name='Goggles';
                                 items[value]={type: value, name: name, count: 0};
                             }
                             items[value].count++;

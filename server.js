@@ -125,14 +125,14 @@ var Radar = Class(Item, {
 
 var Needle = Class(Item, {
     //Constructor
-    _init: function(id) {
+    _init: function() {
         this.parent._init.call(this, 'needle');
     }
 })
 
 var Goggles = Class(Item, {
     //Constructor
-    _init: function(id) {
+    _init: function() {
         this.parent._init.call(this, 'goggles');
     }
 })

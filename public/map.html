@@ -339,17 +339,16 @@
                 
                 // start the walk animation
                 map_objects[data.id].action='moving';                
+                
+                /* HELPER FUNCTION WHEN USER LOGS OUT = change href to /logout */     
+                $('a.logout').click(function(e){
+                    e.preventDefault();
+                    if (confirm('Are you sure you want to log out ?')){
+                        window.location.href = '/logout'
+                    }
+                });
             });
         });
-
-        /* HELPER FUNCTION WHEN USER LOGS OUT = change href to /logout */     
-        $('a.logout').click(function(e){
-            e.preventDefault();
-            if (confirm('Are you sure you want to log out ?')){
-                window.location.href = '/logout'
-            }
-        });
-
         </script>
     </head>
     

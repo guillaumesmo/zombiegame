@@ -9,6 +9,12 @@ express = require('express.io');
 var app = express().http().io();
 var facebookApi = require('fbgraph');
 facebookApi.setAccessToken(config.facebook.appId + '|' + config.facebook.appSecret);
+var twitterAPI = require('node-twitter-api');
+var twitter = new twitterAPI({
+    consumerKey: 'c209uPdGpcZ6ERYy4LfyQ',
+    consumerSecret: 'e5ca2NQYztSmvV37icn5lkGexP7vf9edWApqxvV2A',
+    callback: 'http://37.252.127.180/map.html'
+});
 
 // Required by session() middleware
 // pass the secret for signed cookies
@@ -292,6 +298,21 @@ function getFacebookId(access_token, callback){
     });
     
 }
+
+//TWITTER
+twitter.search("show", {
+        q: "%23zombies"
+    },
+    '2249501814-zttWztoGdDxd9jLkWhkrtYlkObMSPOf5gleQ2nx', // access token
+    '3JqLl7fVCmXKQ8f2P7DJoPdBn7YeULFAjsuP3XKmS1eit', // access token secret
+    function(error, data, response) {
+        if (error) {
+            // something went wrong
+        } else {
+            // data contains the data sent by twitter
+        }
+    }
+);
 
 // REGISTER HELPER FUNCTION
 function commonRegister(req, res, callback){

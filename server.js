@@ -52,7 +52,7 @@ var MapObject = Class({
             id: 'object' + this.getId(),
             pos: this.getPosition(),
             name: "",
-            type: this.icon
+            type: this.getIcon()
         }
     },
     getPosition: function(){},
@@ -233,7 +233,7 @@ var User = Class(MapObject, {
         this.websocket = websocket;
         this.inventory = [];
         this.isZombie = false;
-        this.visibleUsers = [];
+        this.visibleUsers = [this];
         this.oldVisibleUsers = [];
         this.objectEffects = {
             radar: new Date(),
@@ -260,7 +260,7 @@ var User = Class(MapObject, {
         // send the new marker to anyone who can see this user (including yourself)
         var id = this.getId();
         _.each(mapObjects, function(object){
-            if(object instanceof User && (_.contains(object.oldVisibleUsers, this) || object===this)){
+            if(object instanceof User && _.contains(object.oldVisibleUsers, this)){
                 object.websocket.emit('removemarker', {
                     id: 'object' + id
                 });
@@ -278,7 +278,7 @@ var User = Class(MapObject, {
         // send the new position to anyone who can see this user (including yourself)
         var id = this.getId();
         _.each(mapObjects, function(object){
-            if(object instanceof User && (_.contains(object.oldVisibleUsers, this) || object===this)){
+            if(object instanceof User && _.contains(object.oldVisibleUsers, this)){
                 //console.log('send new pos of ' + this.username + ' to ' + object.username);
                 object.websocket.volatile.emit('movemarker', {
                     id: 'object' + id,
@@ -335,18 +335,18 @@ var User = Class(MapObject, {
             // add the other user to the list of users he sees
             this.visibleUsers.push(object);
             
-            // if needed, show the marker
-            if(!_.contains(this.oldVisibleUsers, object) || object===this){
-                //console.log(object.username + " enters in sight of " + this.username);
-                this.websocket.emit('addmarker', object.getData());
-            }
-            
         }
         
-        if(
-            (object instanceof User && object.isZombie && distance<5)
-            || (object instanceof NPC)
-        ){
+        _.each(this.visibleUsers, function(user){
+            // if needed, show the marker
+            if(!_.contains(this.oldVisibleUsers, user)){
+                //console.log(object.username + " enters in sight of " + this.username);
+                this.websocket.emit('addmarker', user.getData());
+            }
+        }, this);
+        
+        if(((object instanceof User && object.isZombie) || (object instanceof NPC)) && distance<5){
+            //console.log(this.username + ' collides with zombie');
             if(this.objectEffects.shield>new Date() || this.removeInventory('shield'))
                 this.objectEffects.shield = (new Date())*1+5000;
             else
@@ -367,7 +367,7 @@ var User = Class(MapObject, {
         
         this.oldVisibleUsers=this.visibleUsers;
         delete this.visibleUsers;
-        this.visibleUsers = [];
+        this.visibleUsers = [this];
     }
 });
 
@@ -743,13 +743,10 @@ app.io.route('position', function(req) {
         var user = new User(req.session.user.id, req.session.user.username, req.socket);
         req.session.user.objectId = mapObjects.length;
         mapObjects.push(user);
-        app.io.broadcast('addmarker', {
-            id: 'object' + req.session.user.objectId,
-            pos: [req.data.coords.latitude, req.data.coords.longitude],
-            name: req.session.user.username,
-            type: 'user'
-        });	
     }
+    
+    // update the sockets (in case he reloaded)
+    mapObjects[req.session.user.objectId].websocket = req.socket;
     
     // finally move the marker
     mapObjects[req.session.user.objectId].setPosition(req.data.coords.latitude, req.data.coords.longitude);
@@ -765,7 +762,7 @@ app.io.route('getallmarkers', function(req) {
     
     _.each(mapObjects, function(object, index){
         
-        // don't send if it's a User (not handled here)
+        // don't send if it's a User
         if(object instanceof User)
             return;
         
@@ -776,6 +773,14 @@ app.io.route('getallmarkers', function(req) {
         req.io.emit('addmarker', object.getData());
         
     });
+    
+    if(req.session.user.objectId){
+        _.each(mapObjects[req.session.user.objectId].oldVisibleUsers, function(object, index){
+
+            req.io.emit('addmarker', object.getData());
+
+        });
+    }
     
     req.session.save();
 });

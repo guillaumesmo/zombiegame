@@ -443,7 +443,7 @@ function reloadTwitter(){
         function(error, data, response) {
             if (error) {
                 // something went wrong
-                console.log(new Date(), "an error has occured with the twitter API");
+                console.log(new Date(), "an error has occured with the twitter API", error);
             } else {
                 // data contains the data sent by twitter
                 var i = data.statuses.length;

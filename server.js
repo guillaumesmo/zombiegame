@@ -383,11 +383,11 @@ function reloadTwitter(){
                 var i = data.statuses.length;
                 //console.log('loaded', i);
                 while(i--){
-                    twitterSince = Math.max(twitterSince, data.statuses[i].id);
+                    twitterSince = data.statuses[i].id_str;
                     chatMessages.unshift({
                         user: '@' + data.statuses[i].user.screen_name + ' (Twitter)',
                         message: data.statuses[i].text,
-                        time: new Date()
+                        time: new Date(data.statuses[i].created_at)
                     });
                     if(chatMessages.length>30)
                         chatMessages.pop();

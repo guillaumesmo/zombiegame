@@ -220,7 +220,7 @@ var User = Class(MapObject, {
         this.position = null;
         this.websocket = websocket;
         this.inventory = [];
-        
+        this.isZombie = false;
         this.visibleUsers = [];
         this.oldVisibleUsers = [];
     },
@@ -368,7 +368,7 @@ function reloadTwitter(){
     
     twitter.search(
         {
-            q: "%23Belgium",
+            q: "%23zombiegame",
             since_id: twitterSince,
             result_type: 'recent'
         },
@@ -574,8 +574,12 @@ app.get('/checklogin-ajax', function(req, res) {
             databaseError("/checklogin-ajax (1)", err, res);
             return;
         }
+        var isZombie = false;
+        if(req.session.user.objectId){
+            isZombie = mapObjects[req.session.user.objectId].isZombie;
+        }
         if(rows.length===1){
-            res.json({result: true, logged: true, username: rows[0].username, email: rows[0].email });
+            res.json({result: true, logged: true, username: rows[0].username, email: rows[0].email, isZombie: isZombie ? 1 : 0 });
         } else {
             delete req.session.user;
             res.json({result: true, logged: false});

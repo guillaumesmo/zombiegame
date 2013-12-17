@@ -21,11 +21,10 @@
         .nav-glyphish-example .ui-btn .ui-icon { width: 30px!important; height: 30px!important; margin-left: -15px !important; box-shadow: none!important; -moz-box-shadow: none!important; -webkit-box-shadow: none!important; -webkit-border-radius: 0 !important; border-radius: 0 !important; }
         a.map .ui-icon { background:  url(img/glyphish-icons/07-map-marker.png) 50% 50% no-repeat; background-size: 16px 26px; }
         a.account .ui-icon { background:  url(img/glyphish-icons/145-persondot.png) 50% 50% no-repeat;  background-size: 20px 24px; }
-        a.settings .ui-icon {background:  url(img/glyphish-icons/19-gear.png) 50% 50% no-repeat;  background-size: 22px 24px;}
+        a.inventory .ui-icon {background:  url(img/glyphish-icons/35-shopping.png) 50% 50% no-repeat;  background-size: 24px 22px;}
         a.logout .ui-icon {background:  url(img/glyphish-icons/63-runner.png) 50% 50% no-repeat;  background-size: 22px 24px;}
         
         #page-account {background: url(img/account_background.jpg); background-position: 200% 60%;}
-        #page-settings {background: url(img/images.jpg) no-repeat; background-position: 90% 0%;}
         #page-logout {background: url(img/logout.png) no-repeat; background-position: 50% 50%;}
         
         //#map-canvas { position: absolute; top: 0; left: 0; right: 0; bottom: 0; }
@@ -116,16 +115,16 @@
                 if(data.result){
                     if(data.logged){ 
 
-				$('#userName').text(data.username);
-				$('#userEmail').text(data.email);
+                        $('#userName').text(data.username);
+                        $('#userEmail').text(data.email);
 						
+                    } else {
+                        onLogOut();
                     }
-                } else {
-					onLogOut();
                 }
             });		
 	
-        	/* HELPER FUNCTION TO CALCULATE OBJECT POSITION  */   
+            /* HELPER FUNCTION TO CALCULATE OBJECT POSITION  */   
             function interpolateMarker(map_object){
                 if(!map_object.interpolation) return;
                 var elapsed = (new Date()-map_object.interpolation.start)/(map_object.interpolation.end-map_object.interpolation.start);
@@ -239,7 +238,7 @@
                 if(map_objects[data.id]){
                     map_objects[data.id].marker.setMap(null);
                     delete map_objects[data.id].marker;
-                    delete map_objects[data.id];
+                    map_objects[data.id] = null;
                 }
 
              	// make the right icon                 
@@ -306,7 +305,7 @@
                     		
                     var map_object = map_objects[data.id];
                     var interval = setInterval(function(){
-                        if(!map_object && !clearInterval(interval)) return;
+                        if((!map_object || !map_object.marker) && !clearInterval(interval)) return;
                         interpolateMarker(map_object);
                         animateMarker(map_object);
                     },25);
@@ -321,10 +320,23 @@
                 if(map_objects[data.id]){
                     map_objects[data.id].marker.setMap(null);
                     delete map_objects[data.id].marker;
-                    delete map_objects[data.id];
+                    map_objects[data.id] = null;
                 }
                 
             });
+            /*
+            zombieEngine.socket.on('resetallmarkers', function(data){
+
+                $.each(map_objects, function(id){
+                    map_objects[id].marker.setMap(null);
+                    delete map_objects[id].marker;
+                    delete map_objects[id];
+                });
+                map_objects={};
+                zombieEngine.socket.emit('getallmarkers');
+                
+            });
+            */
 
             /* WHENEVER THE SERVER MOVES A MARKER EXECUTE FOLLOWING FUNCTION */     
             zombieEngine.socket.on('movemarker', function(data){
@@ -374,6 +386,100 @@
                     window.location.href = '/logout'
                 }
             });
+            
+            $( '#page-inventory' ).on('pageshow', function(event, ui){
+                $('#inventory').html('');
+                $('#inventory').listview( "refresh" );
+                
+                $.getJSON('inventory-ajax', function( data ) {
+                    if(data.result){
+                        var items = {};
+                        $.each(data.inventory, function(index, value){
+                            if(!items[value]){
+                                var name;
+                                if(value=='shield') name='Shield';
+                                else if(value=='radar') name='Radar';
+                                else if(value=='needle') name='Needle';
+                                items[value]={type: value, name: name, count: 0};
+                            }
+                            items[value].count++;
+                        });
+                        $.each(items, function(type, value){
+                            $('#inventory').append('<li data-theme="c"><a href="#" data-ajax="false" data-itemtype="' + value.type + '" data-transition="slide">' + value.name + '<span class="ui-li-count">' + value.count + '</span></a></li>');
+                        });
+                        $('#inventory').listview( "refresh" );
+                        $('#inventory a').click({items: items}, function(e){
+                            e.preventDefault();
+                            var item = e.data.items[$(this).data('itemtype')];
+                            if(confirm("Do you want to use " + item.name + " now?")){
+                                
+                                $.ajax({
+                                    type: "POST",
+                                    url: "/inventory-use-ajax",
+                                    data: {type: item.type},
+                                    dataType: 'json',
+                                    success: function(data){
+                                        if(data.result){
+                                            $.mobile.changePage("#page-map")
+                                        } else {
+                                            alert('An error has occured while using the item');
+                                        }
+                                    }
+                                });
+                                
+                            }
+                        });
+                    } else {
+                        alert('An error has occured while retrieving the inventory');
+                    }
+                });
+            });
+            
+            function updateChat(){
+                $('#chat').html('');
+                $('#chat').listview( "refresh" );
+                
+                $.getJSON('chat-ajax', function( data ) {
+                    if(data.result){
+                        
+                        $.each(data.messages, function(id, message){
+                            $('#chat').append(
+                                $('<li></li>')
+                                .append($('<h3></h3>').text(message.user))
+                                .append($('<p></p>').text(message.message))
+                                .append($('<p class="ui-li-aside"></p>').html($('<strong></strong>').text(message.time)))
+                            );
+                        });
+                        $('#chat').listview( "refresh" );
+                        
+                    } else {
+                        alert('An error has occured while retrieving chat messages');
+                    }
+                });
+            }
+            
+            $( '#page-chat' ).on('pageshow', function(event, ui){
+                updateChat();
+            });
+            
+            $('#chatform').submit(function(e){
+                e.preventDefault();
+                $.ajax({
+                    type: "POST",
+                    url: "/chat-post-ajax",
+                    data: {message: $('#chatinput').val()},
+                    dataType: 'json',
+                    context: this,
+                    success: function(data){
+                        if(data.result){
+                            $('#chatinput').val('');
+                            updateChat();
+                        } else {
+                            alert('An error has occured while posting message');
+                        }
+                    }
+                });
+            });
                 
         });
         </script>
@@ -387,50 +493,78 @@
                 <div data-role="navbar" class="nav-glyphish-example">
                     <ul>
                     	<li><a href="#page-map" data-icon="custom" class="map ui-btn-active ui-state-persist">Map</a></li>
+                    	<li><a href="#page-inventory" data-icon="custom" class="inventory">Inventory</a></li>
+                        <li><a href="#page-chat" data-icon="custom" class="account">Chat</a></li>
                     	<li><a href="#page-account" data-icon="custom" class="account">Account</a></li>
-                    	<li><a href="#page-settings" data-icon="custom" class="settings">Settings</a></li>
                     	<li><a href="#" data-ajax="false" data-icon="custom" class="logout">Log Out</a></li>
                     </ul>
             	</div>
             </div>
             <div data-role="content" id="content">
             	<div id="map-canvas" style="height:100%"></div>
-        	</div>
+            </div>
         </div>
 
-		<div data-role="page" id="page-account">
+        <div data-role="page" id="page-account">
             <div data-role="header">
                 <div data-role="navbar" class="nav-glyphish-example">
                     <ul>
                     	<li><a href="#page-map" data-icon="custom" class="map">Map</a></li>
+                    	<li><a href="#page-inventory" data-icon="custom" class="inventory">Inventory</a></li>
+                        <li><a href="#page-chat" data-icon="custom" class="account">Chat</a></li>
                     	<li><a href="#page-account" data-icon="custom" class="account ui-btn-active ui-state-persist">Account</a></li>
-                    	<li><a href="#page-settings" data-icon="custom" class="settings">Settings</a></li>
                     	<li><a href="#" data-ajax="false" data-icon="custom" class="logout">Log Out</a></li>
                     </ul>
             	</div>
             </div>
-        	<div data-role="content">
-        		<div><span id="ui-username" style="color:white">Username:</span>
-        			<span id="userName" style="color:white">someone</span>
-            	<div><span id="ui-email" style="color:white">Email:</span>
-					<span id="userEmail" style="color:white">someEmail:</span>
-			</div>
-        	</div>
+            <div data-role="content">
+                <div style="color:white">Username: <span id="userName" style="color:white">someone</span></div>
+            	<div style="color:white">Email: <span id="userEmail" style="color:white">someEmail:</span></div>
+            </div>
         </div>
+        
 
-
-        <div data-role="page" id="page-settings">
+        <div data-role="page" id="page-inventory">
             <div data-role="header">
                 <div data-role="navbar" class="nav-glyphish-example">
                     <ul>
                     	<li><a href="#page-map" data-icon="custom" class="map">Map</a></li>
+                    	<li><a href="#page-inventory" data-icon="custom" class="inventory ui-btn-active ui-state-persist">Inventory</a></li>
+                        <li><a href="#page-chat" data-icon="custom" class="account">Chat</a></li>
                     	<li><a href="#page-account" data-icon="custom" class="account">Account</a></li>
-                    	<li><a href="#page-settings" data-icon="custom" class="settings ui-btn-active ui-state-persist">Settings</a></li>
                     	<li><a href="#" data-ajax="false" data-icon="custom" class="logout">Log Out</a></li>
                     </ul>
             	</div>
             </div>
-           	<div data-role="content"></div>
+            <div data-role="content">
+                <ul id="inventory" data-role="listview" data-filter="true" data-divider-theme="c" data-inset="true">
+		</ul>
+            </div>
+        </div>
+        
+
+        <div data-role="page" id="page-chat">
+            <div data-role="header">
+                <div data-role="navbar" class="nav-glyphish-example">
+                    <ul>
+                    	<li><a href="#page-map" data-icon="custom" class="map">Map</a></li>
+                    	<li><a href="#page-inventory" data-icon="custom" class="inventory ">Inventory</a></li>
+                        <li><a href="#page-chat" data-icon="custom" class="account ui-btn-active ui-state-persist">Chat</a></li>
+                    	<li><a href="#page-account" data-icon="custom" class="account">Account</a></li>
+                    	<li><a href="#" data-ajax="false" data-icon="custom" class="logout">Log Out</a></li>
+                    </ul>
+            	</div>
+            </div>
+            <div data-role="content">
+                <form data-ajax="false" id="chatform" action="" method="">
+                    <label for="chatinput">Send message:</label>
+                    <input type="text" id="chatinput" value="" pattern=".{1,}" required="required" />
+                    <input type="submit" value="Send" />
+                </form>
+                <ul id="chat" data-role="listview" data-inset="true">
+                    
+		</ul>
+            </div>
         </div>
         
     </body>

@@ -34,6 +34,7 @@ app.use(express.static(__dirname + '/public'));
 //DECLARATION OF VARIABLES
 var sqlConnection; // for sql
 var mapObjects = []; // Array for MapObjects
+var chatMessages = []; // array for chat messages
 
 // Superclass for objects on the map
 var MapObject = Class({
@@ -52,8 +53,8 @@ var MapObject = Class({
         }
     },
     getPosition: function(){},
-    resetCollisions: function(){},
-    handleCollision: function(object, distance){}
+    handleCollision: function(object, distance){},
+    endCollisions: function(){}
 });
 
 
@@ -73,7 +74,7 @@ var Item = Class(MapObject, {
     },
     // Set the position
     setPosition: function(lat, lng){    	
-        this.position = [lat, lng];        
+        this.position = [lat, lng];
     },
     // Function that is called when the object should appear again
     respawn: function(){    	
@@ -219,6 +220,9 @@ var User = Class(MapObject, {
         this.position = null;
         this.websocket = websocket;
         this.inventory = [];
+        
+        this.visibleUsers = [];
+        this.oldVisibleUsers = [];
     },
     //Get the position
     getPosition: function(){
@@ -233,6 +237,20 @@ var User = Class(MapObject, {
     setPosition: function(lat, lng){
         this.lastposition = new Date();
         this.position = [lat, lng];
+        
+        //console.log(this.username + ' changes position');
+        
+        // send the new position to anyone who can see this user (including yourself)
+        var id = this.getId();
+        _.each(mapObjects, function(object){
+            if(object instanceof User && (_.contains(object.oldVisibleUsers, this) || object===this)){
+                //console.log('send new pos of ' + this.username + ' to ' + object.username);
+                object.websocket.volatile.emit('movemarker', {
+                    id: 'object' + id,
+                    pos: this.position
+                });
+            }
+        }, this);
     
         // update the user position in database if it hasn't been done in the last 3 seconds
         if(this.lastpositionsave<(new Date()-3000)){
@@ -254,6 +272,36 @@ var User = Class(MapObject, {
         var index = this.inventory.indexOf(type);
         if(index != -1)
             this.inventory.splice(index);
+    },
+    handleCollision: function(object, distance){
+        if(object instanceof User && distance<100){
+            
+            // add the other user to the list of users he sees
+            this.visibleUsers.push(object);
+            
+            // if needed, show the marker
+            if(!_.contains(this.oldVisibleUsers, object) || object===this){
+                //console.log(object.username + " enters in sight of " + this.username);
+                this.websocket.emit('addmarker', object.getData());
+            }
+            
+        }
+    },
+    endCollisions: function(){
+        
+        // remove all markers the user can't see
+        for(var i=0;i<this.oldVisibleUsers.length;i++){
+            if(!_.contains(this.visibleUsers, this.oldVisibleUsers[i])){
+                //console.log(this.oldVisibleUsers[i].username + " leaves sight of " + this.username);
+                this.websocket.emit('removemarker', {
+                    id: 'object' + this.oldVisibleUsers[i].getId()
+                });
+            }
+        }
+        
+        this.oldVisibleUsers=this.visibleUsers;
+        delete this.visibleUsers;
+        this.visibleUsers = [];
     }
 });
 
@@ -315,25 +363,59 @@ function getFacebookId(access_token, callback){
 }
 
 //TWITTER
-/*
-twitter.search("show", {
-        q: "%23zombies"
-    },
-    '2249501814-zttWztoGdDxd9jLkWhkrtYlkObMSPOf5gleQ2nx', // access token
-    '3JqLl7fVCmXKQ8f2P7DJoPdBn7YeULFAjsuP3XKmS1eit', // access token secret
-    function(error, data, response) {
-        if (error) {
-            // something went wrong
-        } else {
-            // data contains the data sent by twitter
+var twitterSince = 0;
+function reloadTwitter(){
+    
+    twitter.search(
+        {
+            q: "%23Belgium",
+            since_id: twitterSince,
+            result_type: 'recent'
+        },
+        '2249501814-zttWztoGdDxd9jLkWhkrtYlkObMSPOf5gleQ2nx', // access token
+        '3JqLl7fVCmXKQ8f2P7DJoPdBn7YeULFAjsuP3XKmS1eit', // access token secret
+        function(error, data, response) {
+            if (error) {
+                // something went wrong
+                console.log(new Date(), "an error has occured with the twitter API");
+            } else {
+                // data contains the data sent by twitter
+                var i = data.statuses.length;
+                //console.log('loaded', i);
+                while(i--){
+                    twitterSince = Math.max(twitterSince, data.statuses[i].id);
+                    chatMessages.unshift({
+                        user: '@' + data.statuses[i].user.screen_name + ' (Twitter)',
+                        message: data.statuses[i].text,
+                        time: new Date()
+                    });
+                    if(chatMessages.length>30)
+                        chatMessages.pop();
+                }
+            }
         }
-    }
-);
-*/
+    );
+    
+};
+reloadTwitter();
+setInterval(reloadTwitter, 15000);
 
 // REGISTER HELPER FUNCTION
 function commonRegister(req, res, callback){
     
+    // check if username has valid format
+    if(!(/^[a-zA-Z0-9-_]{5,16}$/).test(req.body.username)){
+        res.json({result: false, error: 'Invalid username'});
+        return;
+    }
+    
+    // check if email has valid format
+    if(!(/^[\w-\._\+%]+@(?:[\w-]+\.)+[\w]{2,6}$/).test(req.body.email)){
+        res.json({result: false, error: 'Invalid email'});
+        return;
+    }
+    
+    // check if username is unique
     sqlConnection.query('SELECT `id` FROM `users` WHERE `username`=? LIMIT 0,1', req.body.username, function(err, rows) {
         
         if(err){
@@ -502,6 +584,78 @@ app.get('/checklogin-ajax', function(req, res) {
     
 });
 
+//ROUTE TO GET INVENTORY CONTENTS (using express)
+app.get('/inventory-ajax', function(req, res) {
+    
+    if(!req.session.user){
+        res.json({result: false});
+        return;
+    }
+    
+    if(!req.session.user.objectId){
+        res.json({result: true, inventory: []});
+        return;
+    }
+    
+    res.json({result: true, inventory: mapObjects[req.session.user.objectId].inventory});
+    
+});
+
+//ROUTE TO GET INVENTORY CONTENTS (using express)
+app.post('/inventory-use-ajax', function(req, res) {
+    
+    if(!req.session.user || !req.session.user.objectId){
+        res.json({result: false});
+        return;
+    }
+    
+    
+    
+    res.json({result: true, inventory: mapObjects[req.session.user.objectId].inventory});
+    
+});
+
+//ROUTE TO GET CHAT MESSAGES (using express)
+app.get('/chat-ajax', function(req, res) {
+    
+    if(!req.session.user || !req.session.user.objectId){
+        res.json({result: false});
+        return;
+    }
+    
+    var messages = [];
+    _.each(chatMessages, function(message){
+        messages.push({
+            user: typeof message.user==="string" ? message.user : message.user.username,
+            message: message.message,
+            time: message.time.getHours() + ':' + (message.time.getMinutes()<10 ? '0' + message.time.getMinutes() : message.time.getMinutes())
+        });
+    });
+    
+    res.json({result: true, messages: messages});
+    
+});
+
+//ROUTE TO GET CHAT MESSAGES (using express)
+app.post('/chat-post-ajax', function(req, res) {
+    
+    if(!req.session.user || !req.session.user.objectId){
+        res.json({result: false});
+        return;
+    }
+    
+    chatMessages.unshift({
+        user: mapObjects[req.session.user.objectId],
+        message: req.body.message,
+        time: new Date()
+    });
+    if(chatMessages.length>30)
+        chatMessages.pop();
+    
+    res.json({result: true});
+    
+});
+
 //ROUTE TO SEND THE POSITION OF A USER (using socket.io)
 app.io.route('position', function(req) {
     if(!req.session.user){
@@ -526,16 +680,9 @@ app.io.route('position', function(req) {
             type: 'user'
         });	
     }
-    app.io.broadcast('movemarker', {
-        id: 'object' + req.session.user.objectId,
-        pos: [req.data.coords.latitude, req.data.coords.longitude]
-    });
-    // finally move the marker and broadcast it to all clients
+    
+    // finally move the marker
     mapObjects[req.session.user.objectId].setPosition(req.data.coords.latitude, req.data.coords.longitude);
-    app.io.broadcast('movemarker', {
-        id: 'object' + req.session.user.objectId,
-        pos: [req.data.coords.latitude, req.data.coords.longitude]
-    });
     
     req.session.save();
 });
@@ -547,6 +694,10 @@ app.io.route('getallmarkers', function(req) {
     }
     
     _.each(mapObjects, function(object, index){
+        
+        // don't send if it's a User (not handled here)
+        if(object instanceof User)
+            return;
         
         // don't send if it's an invisible item
         if(object instanceof Item && !object.visible)
@@ -641,6 +792,9 @@ setInterval(function(){
             
         }
     }
+    
+    for(i=0;i<mapObjects.length;i++)
+        mapObjects[i].endCollisions();
     
 }, 1000);
 

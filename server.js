@@ -27,8 +27,88 @@ app.use(express.static(__dirname + '/public'));
 
 //DECLARATION OF VARIABLES
 var sqlConnection; //for sql
+
+//Characters
 var onlineusers = {}; //the active 'real' users on the server
 var npcs = []; //the 'fake' Bots on the server
+
+//Items
+var shields = [];
+var radars = [];
+var needles = [];
+
+
+//SUPER CLASS Item
+var Item = Class({
+    _init: function() {
+        this.icon = 'item';
+    },
+    getPosition: function(){}
+});
+
+var Shield = Class(Item, {
+	
+	//Constructor
+	_init: function(id) {
+		
+		this.parent._init.call(this);
+		this.icon = 'shield';
+		this.id = id;		
+		this.position = null;
+	},
+	
+	getPosition: function() {
+		return this.position;
+	},
+    //Set the position
+    setPosition: function(lat, lng){    	
+        this.position = [lat, lng];        
+    }
+})
+
+var Radar = Class(Item, {
+	
+	//Constructor
+	_init: function(id) {
+		
+		this.parent._init.call(this);
+		this.icon = 'radar';
+		this.id = id;		
+		this.position = null;
+	},
+	
+	getPosition: function() {
+		return this.position;
+	},
+    //Set the position
+    setPosition: function(lat, lng){    	
+        this.position = [lat, lng];        
+    }
+})
+
+var Needle = Class(Item, {
+	
+	//Constructor
+	_init: function(id) {
+		
+		this.parent._init.call(this);
+		this.icon = 'needle';
+		this.id = id;		
+		this.position = null;
+	},
+	
+	getPosition: function() {
+		return this.position;
+	},
+    //Set the position
+    setPosition: function(lat, lng){    	
+        this.position = [lat, lng];        
+    }
+})
+
+
+
+
 
 //SUPER CLASS Character
 var Character = Class({
@@ -441,8 +521,71 @@ app.io.route('getallmarkers', function(req) {
         });
     });
     
+    _.each(shields, function(shield){
+        req.io.emit('addmarker', {
+            id: 'shield' + shield.id,
+            pos: shield.getPosition(),
+            name: 'shield',
+            type: shield.icon
+        });
+    });
+    
+    _.each(radars, function(radar){
+        req.io.emit('addmarker', {
+            id: 'radar' + radar.id,
+            pos: radar.getPosition(),
+            name: 'radar',
+            type: radar.icon
+        });
+    });
+    
+    _.each(needles, function(needle){
+        req.io.emit('addmarker', {
+            id: 'needle' + needle.id,
+            pos: needle.getPosition(),
+            name: 'needle',
+            type: needle.icon
+        });
+    });
+    
     req.session.save();
 });
+
+//CREATE SOME SHIELDS
+var shieldRange = 0.004;
+
+var shield = new Shield(shields.length+1);
+shield.setPosition(50.8228 + ((Math.random() * (shieldRange))-shieldRange/2) , 4.395 + ((Math.random() *(shieldRange))-shieldRange/2) );
+shields.push(shield);
+
+shield = new Shield(shields.length+1);
+shield.setPosition(50.8228 + ((Math.random() * (shieldRange))-shieldRange/2) , 4.395 + ((Math.random() *(shieldRange))-shieldRange/2) );
+shields.push(shield);
+
+shield = new Shield(shields.length+1);
+shield.setPosition(50.8228 + ((Math.random() * (shieldRange))-shieldRange/2) , 4.395 + ((Math.random() *(shieldRange))-shieldRange/2) );
+shields.push(shield);
+
+
+//CREATE SOME RADARS
+var radarRange = 0.004;
+
+var radar = new Radar(radars.length+1);
+radar.setPosition(50.8228 + ((Math.random() * (radarRange))-radarRange/2) , 4.395 + ((Math.random() *(radarRange))-radarRange/2) );
+radars.push(radar);
+
+//CREATE SOME NEEDLES
+var needleRange = 0.004;
+
+var needle = new Needle(needles.length+1);
+needle.setPosition(50.8228 + ((Math.random() * (needleRange))-needleRange/2) , 4.395 + ((Math.random() *(needleRange))-needleRange/2) );
+needles.push(needle);
+
+needle = new Needle(needles.length+1);
+needle.setPosition(50.8228 + ((Math.random() * (needleRange))-needleRange/2) , 4.395 + ((Math.random() *(needleRange))-needleRange/2) );
+needles.push(needle);
+
+
 
 
 // CREATE TWO DEFAULT BOTS WITH DEFAULT PATHS
@@ -465,6 +608,7 @@ setInterval(function(){
     });
     
 }, 1000);
+
 
 var serverPort = process.argv[2] ? process.argv[2] : config.defaultPort;
 app.listen(serverPort);

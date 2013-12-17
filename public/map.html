@@ -207,23 +207,53 @@
                     delete map_objects[data.id].marker;
                     delete map_objects[data.id];
                 }
+
+             	// make the right icon                 
+                var icon;
+                if (data.type === 'user') {
+                    icon = {
+                        url: 'img/user_sprite.png',
+                        size: new google.maps.Size(96, 96),
+                        origin: new google.maps.Point(0, 0),
+                        anchor: new google.maps.Point(48, 75),
+                        scaledSize: new google.maps.Size(768, 768)
+                    };
+                } else if(data.type === 'zombie') {
+                    icon = {
+                        url: 'img/zombie_sprite.png',
+                        size: new google.maps.Size(128, 128),
+                        origin: new google.maps.Point(0, 0),
+                        anchor: new google.maps.Point(64, 100)
+                    };
+                } else if(data.type === 'shield') {
+                    icon = {
+                        url: 'img/shieldGood.png',
+                        size: new google.maps.Size(50, 50),
+                        origin: new google.maps.Point(0, 0),
+                        anchor: new google.maps.Point(25, 25)
+                    };
+                } else if(data.type === 'radar') {
+                    icon = {
+                        url: 'img/radar.png',
+                        size: new google.maps.Size(50, 50),
+                        origin: new google.maps.Point(0, 0),
+                        anchor: new google.maps.Point(25, 25)
+                    };
+                } else if(data.type === 'needle') {
+                    icon = {
+                            url: 'img/needle.png',
+                            size: new google.maps.Size(50, 50),
+                            origin: new google.maps.Point(0, 0),
+                            anchor: new google.maps.Point(25, 25)
+                        };
+                    }
+
                 // If not add the marker to the clients map_object variable and display the according data.
                 map_objects[data.id] = {
                     marker: new google.maps.Marker({
                         position: new google.maps.LatLng(data.pos[0], data.pos[1]),
                         title: data.name,
-                        icon: data.type==='user' ? {
-                            url: 'img/user_sprite.png',
-                            size: new google.maps.Size(96, 96),
-                            origin: new google.maps.Point(0, 0),
-                            anchor: new google.maps.Point(48, 75),
-                            scaledSize: new google.maps.Size(768, 768)
-                        } : {
-                            url: 'img/zombie_sprite.png',
-                            size: new google.maps.Size(128, 128),
-                            origin: new google.maps.Point(0, 0),
-                            anchor: new google.maps.Point(64, 100)
-                        }
+                        icon: icon
                     }),
                     id: data.id,
                     type: data.type,
@@ -236,6 +266,10 @@
 	
                 // EXECUTE THE INTERPOLATION(POSITION) AND ANIMATION OF THE CURRENT MAP_OBJECT
                 (function(){
+
+                    if( map_objects[data.id].type == 'shield' || map_objects[data.id].type == 'radar' 
+                    	|| map_objects[data.id].type == 'needle'  ) return;
+                    		
                     var map_object = map_objects[data.id];
                     var interval = setInterval(function(){
                         if(!map_object && !clearInterval(interval)) return;

@@ -274,12 +274,20 @@
                     };
                 } else if(data.type === 'needle') {
                     icon = {
-                            url: 'img/needle.png',
-                            size: new google.maps.Size(50, 50),
-                            origin: new google.maps.Point(0, 0),
-                            anchor: new google.maps.Point(25, 25)
-                        };
-                    }
+                        url: 'img/needle.png',
+                        size: new google.maps.Size(50, 50),
+                        origin: new google.maps.Point(0, 0),
+                        anchor: new google.maps.Point(25, 25)
+                    };
+                }
+ 				  else if(data.type === 'goggles') {
+                    icon = {
+                        url: 'img/zombieGogglesGood.png',
+                        size: new google.maps.Size(50, 50),
+                        origin: new google.maps.Point(0, 0),
+                        anchor: new google.maps.Point(25, 25)
+                    };
+               	}
 
                 // If not add the marker to the clients map_object variable and display the according data.
                 map_objects[data.id] = {
@@ -301,7 +309,7 @@
                 (function(){
 
                     if( map_objects[data.id].type == 'shield' || map_objects[data.id].type == 'radar' 
-                    	|| map_objects[data.id].type == 'needle'  ) return;
+                    	|| map_objects[data.id].type == 'needle' || map_objects[data.id].type == 'goggles'  ) return;
                     		
                     var map_object = map_objects[data.id];
                     var interval = setInterval(function(){

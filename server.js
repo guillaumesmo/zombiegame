@@ -98,6 +98,8 @@ var Item = Class(MapObject, {
             
             // respawn in 10 seconds
             setTimeout(_.bind(function(){
+            	var range = (Math.random() * 0.009) + 0.001;
+            	this.setPosition(50.8228 + ((Math.random() * (range))-range/2) , 4.395 + ((Math.random() *(range))-range/2) );
                 this.respawn();
             }, this), 10000);
         }
@@ -122,6 +124,13 @@ var Needle = Class(Item, {
     //Constructor
     _init: function(id) {
         this.parent._init.call(this, 'needle');
+    }
+})
+
+var Goggles = Class(Item, {
+    //Constructor
+    _init: function(id) {
+        this.parent._init.call(this, 'goggles');
     }
 })
 
@@ -729,11 +738,19 @@ shield = new Shield();
 shield.setPosition(50.8228 + ((Math.random() * (shieldRange))-shieldRange/2) , 4.395 + ((Math.random() *(shieldRange))-shieldRange/2) );
 mapObjects.push(shield);
 
+shield = new Shield();
+shield.setPosition(50.8228 + ((Math.random() * (shieldRange))-shieldRange/2) , 4.395 + ((Math.random() *(shieldRange))-shieldRange/2) );
+mapObjects.push(shield);
+
 
 //CREATE SOME RADARS
 var radarRange = 0.004;
 
 var radar = new Radar();
+radar.setPosition(50.8228 + ((Math.random() * (radarRange))-radarRange/2) , 4.395 + ((Math.random() *(radarRange))-radarRange/2) );
+mapObjects.push(radar);
+
+radar = new Radar();
 radar.setPosition(50.8228 + ((Math.random() * (radarRange))-radarRange/2) , 4.395 + ((Math.random() *(radarRange))-radarRange/2) );
 mapObjects.push(radar);
 
@@ -748,7 +765,16 @@ needle = new Needle();
 needle.setPosition(50.8228 + ((Math.random() * (needleRange))-needleRange/2) , 4.395 + ((Math.random() *(needleRange))-needleRange/2) );
 mapObjects.push(needle);
 
+//CREATE SOME GOGGLES
+var goggleRange = 0.004;
 
+var goggles = new Goggles();
+goggles.setPosition(50.8228 + ((Math.random() * (goggleRange))-goggleRange/2) , 4.395 + ((Math.random() *(goggleRange))-goggleRange/2) );
+mapObjects.push(goggles);
+
+goggles = new Goggles();
+goggles.setPosition(50.8228 + ((Math.random() * (goggleRange))-goggleRange/2) , 4.395 + ((Math.random() *(goggleRange))-goggleRange/2) );
+mapObjects.push(goggles);
 
 
 // CREATE TWO DEFAULT BOTS WITH DEFAULT PATHS
